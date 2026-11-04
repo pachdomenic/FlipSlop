@@ -90,6 +90,9 @@ kotlin {
 }
 
 dependencies {
+    // @SystemApi classes (TrustAgentService); the framework provides them at runtime.
+    compileOnly(project(":systemstubs"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)

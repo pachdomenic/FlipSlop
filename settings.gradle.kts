@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "FlipSlop"
 include(":app")
+include(":systemstubs")

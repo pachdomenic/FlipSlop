@@ -24,7 +24,8 @@ android_app {
     additional_manifests: ["app/src/main/AndroidManifest.xml"],
     use_resource_processor: true,
 
-    sdk_version: "current",
+    // System API: unlock/CoverTrustAgent extends TrustAgentService.
+    sdk_version: "system_current",
     min_sdk_version: "35",
 
     privileged: true,
