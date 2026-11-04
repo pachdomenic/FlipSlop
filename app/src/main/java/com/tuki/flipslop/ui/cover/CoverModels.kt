@@ -47,6 +47,7 @@ data class CoverUiState(
     val themedIcons: Boolean = false,
     val idleAospClock: Boolean = true,
     val mediaArtBackground: Boolean = true,
+    val artBlurDp: Int = 32,
     /** The system status bar is showing (it has its own battery icon). */
     val systemStatusBar: Boolean = false,
     val dock: DockConfig = DockConfig(),

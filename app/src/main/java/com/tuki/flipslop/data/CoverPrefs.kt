@@ -54,6 +54,10 @@ data class CoverSettings(
     val idleAospClock: Boolean = true,
     /** Album art fills the media page background and the now playing pill. */
     val mediaArtBackground: Boolean = true,
+    /** Blur of the wallpaper behind the cover, in dp (0 = sharp). */
+    val wallpaperBlurDp: Int = 0,
+    /** Blur of the album art background, in dp. */
+    val artBlurDp: Int = 32,
     /** System status bar on the cover (the navigation bar always stays hidden). */
     val showStatusBar: Boolean = true,
     val cameraSide: CameraSide = DeviceProfile.current.coverCameraSide,
@@ -88,6 +92,8 @@ class CoverPrefs(context: Context) {
                 ?: ThemedIcons.SYSTEM,
             idleAospClock = p[IDLE_AOSP_CLOCK] ?: true,
             mediaArtBackground = p[MEDIA_ART_BACKGROUND] ?: true,
+            wallpaperBlurDp = p[WALLPAPER_BLUR] ?: 0,
+            artBlurDp = p[ART_BLUR] ?: 32,
             showStatusBar = p[SHOW_STATUS_BAR] ?: true,
             cameraSide = p[CAMERA_SIDE]?.let { runCatching { CameraSide.valueOf(it) }.getOrNull() }
                 ?: DeviceProfile.current.coverCameraSide,
@@ -122,6 +128,8 @@ class CoverPrefs(context: Context) {
     suspend fun setThemedIcons(mode: ThemedIcons) = store.edit { it[THEMED_ICONS] = mode.name }
     suspend fun setIdleAospClock(value: Boolean) = store.edit { it[IDLE_AOSP_CLOCK] = value }
     suspend fun setMediaArtBackground(value: Boolean) = store.edit { it[MEDIA_ART_BACKGROUND] = value }
+    suspend fun setWallpaperBlur(dp: Int) = store.edit { it[WALLPAPER_BLUR] = dp.coerceIn(0, MAX_BLUR_DP) }
+    suspend fun setArtBlur(dp: Int) = store.edit { it[ART_BLUR] = dp.coerceIn(0, MAX_BLUR_DP) }
     suspend fun setShowStatusBar(value: Boolean) = store.edit { it[SHOW_STATUS_BAR] = value }
     suspend fun setCameraSide(side: CameraSide) = store.edit { it[CAMERA_SIDE] = side.name }
     suspend fun setCameraWidth(dp: Int) = store.edit { it[CAMERA_WIDTH] = dp.coerceIn(0, MAX_CAMERA_WIDTH_DP) }
@@ -172,6 +180,7 @@ class CoverPrefs(context: Context) {
     companion object {
         const val MAX_INSET_DP = 240
         const val MAX_CAMERA_WIDTH_DP = 320
+        const val MAX_BLUR_DP = 64
         private const val MAX_PANELS = 4
         private const val LIST_SEP = ","
 
@@ -189,6 +198,8 @@ class CoverPrefs(context: Context) {
         private val KNOWN_PANELS = stringSetPreferencesKey("known_panels")
         private val IDLE_AOSP_CLOCK = booleanPreferencesKey("idle_aosp_clock")
         private val MEDIA_ART_BACKGROUND = booleanPreferencesKey("media_art_background")
+        private val WALLPAPER_BLUR = intPreferencesKey("wallpaper_blur_dp")
+        private val ART_BLUR = intPreferencesKey("art_blur_dp")
         private val SHOW_STATUS_BAR = booleanPreferencesKey("show_status_bar")
         private val CAMERA_SIDE = stringPreferencesKey("camera_side")
         private val CAMERA_WIDTH = intPreferencesKey("camera_width_dp")

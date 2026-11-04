@@ -114,6 +114,12 @@ class CoverActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+                runtime.settings.map { it.wallpaperBlurDp }.distinctUntilChanged().collect(::applyWallpaperBlur)
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
                 runtime.fold.snapshot.collect { snap ->
                     if (!stay && (snap.state == FoldState.OPEN || snap.state == FoldState.HALF_OPEN)) {
                         finish()
@@ -169,6 +175,16 @@ class CoverActivity : ComponentActivity() {
         runtime.toggles.stop()
         runtime.widgets.stopListening()
         super.onStop()
+    }
+
+    /**
+     * Blurs the wallpaper showing through the window (window background
+     * blur, Android 12+). SurfaceFlinger only draws it while cross-window
+     * blur is enabled: supported by the device and not in battery saver.
+     */
+    private fun applyWallpaperBlur(dp: Int) {
+        val px = (dp * resources.displayMetrics.density).roundToInt()
+        runCatching { window.setBackgroundBlurRadius(px) }
     }
 
     /** The navigation bar never shows on the cover; the status bar is a setting. */

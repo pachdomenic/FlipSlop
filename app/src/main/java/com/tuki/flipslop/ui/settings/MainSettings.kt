@@ -1,5 +1,6 @@
 package com.tuki.flipslop.ui.settings
 
+import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,11 +53,13 @@ import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -187,6 +190,28 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                 },
                 switchRow(Icons.Rounded.Album, R.string.pref_media_art, R.string.pref_media_art_desc, settings.mediaArtBackground) {
                     scope.launch { prefs.setMediaArtBackground(it) }
+                },
+                { shapes ->
+                    SliderRow(
+                        value = settings.artBlurDp,
+                        max = CoverPrefs.MAX_BLUR_DP,
+                        title = R.string.pref_art_blur,
+                        desc = R.string.pref_art_blur_desc,
+                        shapes = shapes,
+                    ) { v -> scope.launch { prefs.setArtBlur(v) } }
+                },
+                { shapes ->
+                    val context = LocalContext.current
+                    val blurSupported = remember {
+                        context.getSystemService(WindowManager::class.java).isCrossWindowBlurEnabled
+                    }
+                    SliderRow(
+                        value = settings.wallpaperBlurDp,
+                        max = CoverPrefs.MAX_BLUR_DP,
+                        title = R.string.pref_wallpaper_blur,
+                        desc = if (blurSupported) R.string.pref_wallpaper_blur_desc else R.string.pref_wallpaper_blur_unsupported,
+                        shapes = shapes,
+                    ) { v -> scope.launch { prefs.setWallpaperBlur(v) } }
                 },
             ),
         )

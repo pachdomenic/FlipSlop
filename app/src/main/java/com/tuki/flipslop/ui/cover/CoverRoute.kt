@@ -83,6 +83,7 @@ fun rememberCoverUiState(
         themedIcons = settings.themedIcons.resolve(systemThemed),
         idleAospClock = settings.idleAospClock,
         mediaArtBackground = settings.mediaArtBackground,
+        artBlurDp = settings.artBlurDp,
         systemStatusBar = settings.showStatusBar,
         dock = DockConfig(
             cameraSide = settings.cameraSide,

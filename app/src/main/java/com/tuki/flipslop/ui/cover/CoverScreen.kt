@@ -144,7 +144,7 @@ fun CoverScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer { alpha = artVisibility }
-                        .blur(32.dp),
+                        .then(if (state.artBlurDp > 0) Modifier.blur(state.artBlurDp.dp) else Modifier),
                 )
             }
             Box(
