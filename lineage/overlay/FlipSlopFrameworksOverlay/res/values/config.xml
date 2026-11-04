@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification access for FlipSlop out of the box: notifications and
+         media on the cover, and the system keeps the app bound, so the fold
+         watcher needs no foreground service. -->
+    <string name="config_defaultListenerAccessPackages" translatable="false">com.tuki.flipslop</string>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Privileged permissions FlipSlop may hold as a priv-app. With these the
+     cover opens on fold without "Display over other apps", Home on the cover
+     returns to FlipSlop without usage access, widgets bind without a dialog
+     and the Bluetooth toggle works in place.
+-->
+<permissions>
+    <privapp-permissions package="com.tuki.flipslop">
+        <permission name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
+        <permission name="android.permission.PACKAGE_USAGE_STATS" />
+        <permission name="android.permission.BIND_APPWIDGET" />
+        <permission name="android.permission.BLUETOOTH_PRIVILEGED" />
+    </privapp-permissions>
+</permissions>

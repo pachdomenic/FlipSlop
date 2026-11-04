@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <!-- Lets FlipSlop reach DeviceStateManager, the exact fold signal
+         (config_foldedDeviceStates), instead of guessing from the active panel. -->
+    <hidden-api-whitelisted-app package="com.tuki.flipslop" />
+
+    <!-- The fold watcher must keep running in Doze. -->
+    <allow-in-power-save package="com.tuki.flipslop" />
+</config>
