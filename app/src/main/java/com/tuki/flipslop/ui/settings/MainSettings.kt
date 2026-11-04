@@ -1,6 +1,8 @@
 package com.tuki.flipslop.ui.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +17,7 @@ import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.BrightnessMedium
+import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Home
@@ -36,6 +39,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemShapes
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -53,6 +57,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tuki.flipslop.BuildConfig
@@ -63,6 +69,7 @@ import com.tuki.flipslop.core.SystemConfig
 import com.tuki.flipslop.core.Tier
 import com.tuki.flipslop.data.ClockStyle
 import com.tuki.flipslop.data.CoverPrefs
+import com.tuki.flipslop.data.IconShapeStyle
 import com.tuki.flipslop.fold.FoldSnapshot
 import com.tuki.flipslop.fold.FoldSource
 import com.tuki.flipslop.fold.FoldState
@@ -71,6 +78,7 @@ import com.tuki.flipslop.ui.cover.CoverScreen
 import com.tuki.flipslop.ui.cover.HostedWidget
 import com.tuki.flipslop.ui.cover.NoopCoverActions
 import com.tuki.flipslop.ui.cover.rememberCoverUiState
+import com.tuki.flipslop.ui.components.rememberIconShape
 import kotlinx.coroutines.launch
 
 @Composable
@@ -136,6 +144,24 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
             title = titleStyle,
             key = "style",
             rows = listOf(
+                { shapes ->
+                    ChoiceRow(
+                        title = R.string.pref_icon_shape,
+                        icon = Icons.Rounded.Category,
+                        options = IconShapeStyle.entries,
+                        selected = settings.iconShape,
+                        label = { stringResource(it.labelRes) },
+                        shapes = shapes,
+                        content = { style ->
+                            Box(
+                                Modifier
+                                    .size(22.dp)
+                                    .clip(rememberIconShape(0, style))
+                                    .background(LocalContentColor.current),
+                            )
+                        },
+                    ) { s -> scope.launch { prefs.setIconShape(s) } }
+                },
                 { shapes -> ClockStyleRow(settings.clockStyle, shapes) { s -> scope.launch { prefs.setClockStyle(s) } } },
                 switchRow(Icons.Rounded.AccessTime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, settings.idleAospClock) {
                     scope.launch { prefs.setIdleAospClock(it) }
@@ -361,6 +387,64 @@ private fun ClockStyleRow(style: ClockStyle, shapes: ListItemShapes, onChange: (
         },
     ) { Text(stringResource(R.string.pref_clock)) }
 }
+
+/**
+ * One choice out of a few, as connected toggle buttons. [content] draws a
+ * button (defaults to its label); the title row names the current choice.
+ */
+@Composable
+private fun <T> ChoiceRow(
+    title: Int,
+    icon: ImageVector,
+    options: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    shapes: ListItemShapes,
+    footer: String? = null,
+    content: @Composable (T) -> Unit = { Text(label(it), maxLines = 1) },
+    onChange: (T) -> Unit,
+) {
+    ListItem(
+        onClick = {},
+        shapes = shapes,
+        leadingContent = { Icon(icon, contentDescription = null) },
+        supportingContent = {
+            Column {
+                Text(label(selected))
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+                ) {
+                    options.forEachIndexed { i, option ->
+                        val buttonShapes = when (i) {
+                            0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                            options.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                            else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                        }
+                        val description = label(option)
+                        ToggleButton(
+                            checked = option == selected,
+                            onCheckedChange = { onChange(option) },
+                            shapes = buttonShapes,
+                            modifier = Modifier.weight(1f).semantics { contentDescription = description },
+                        ) { content(option) }
+                    }
+                }
+                if (footer != null) {
+                    Text(footer, modifier = Modifier.padding(top = 6.dp))
+                }
+            }
+        },
+    ) { Text(stringResource(title)) }
+}
+
+private val IconShapeStyle.labelRes: Int
+    get() = when (this) {
+        IconShapeStyle.EXPRESSIVE -> R.string.icon_shape_expressive
+        IconShapeStyle.CIRCLE -> R.string.icon_shape_circle
+        IconShapeStyle.SQUIRCLE -> R.string.icon_shape_squircle
+        IconShapeStyle.SYSTEM -> R.string.icon_shape_system
+    }
 
 @Composable
 private fun CameraSideRow(side: CameraSide, shapes: ListItemShapes, onChange: (CameraSide) -> Unit) {

@@ -141,7 +141,7 @@ fun AppsSettings(runtime: CoverRuntime, onBack: () -> Unit) {
                 onCheckedChange = { runtime.apps.togglePin(app) },
                 shapes = ListItemDefaults.segmentedShapes(index, filtered.size),
                 modifier = Modifier.padding(bottom = ListItemDefaults.SegmentedGap),
-                leadingContent = { ShapedAppIcon(app.icon, rememberIconShape(index), size = 40.dp) },
+                leadingContent = { ShapedAppIcon(app.icon, rememberIconShape(index, settings.iconShape), size = 40.dp) },
                 trailingContent = { Checkbox(checked = app.key in pinned, onCheckedChange = null) },
             ) { Text(app.label) }
         }

@@ -3,6 +3,7 @@ package com.tuki.flipslop.ui.cover
 import com.tuki.flipslop.apps.AppEntry
 import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.data.ClockStyle
+import com.tuki.flipslop.data.IconShapeStyle
 import com.tuki.flipslop.data.CoverPage
 import com.tuki.flipslop.data.DefaultPages
 import com.tuki.flipslop.media.MediaState
@@ -41,6 +42,7 @@ data class CoverUiState(
     /** Padding that keeps content clear of the panel's rounded corners. */
     val edgePaddingDp: Int = 16,
     val clockStyle: ClockStyle = ClockStyle.STACKED,
+    val iconShape: IconShapeStyle = IconShapeStyle.EXPRESSIVE,
     val idleAospClock: Boolean = true,
     val mediaArtBackground: Boolean = true,
     /** The system status bar is showing (it has its own battery icon). */

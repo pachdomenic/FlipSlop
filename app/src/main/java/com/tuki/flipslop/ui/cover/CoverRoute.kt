@@ -77,6 +77,7 @@ fun rememberCoverUiState(
         bottomInsetDp = settings.bottomInsetDp,
         edgePaddingDp = edgePaddingDp,
         clockStyle = settings.clockStyle,
+        iconShape = settings.iconShape,
         idleAospClock = settings.idleAospClock,
         mediaArtBackground = settings.mediaArtBackground,
         systemStatusBar = settings.showStatusBar,

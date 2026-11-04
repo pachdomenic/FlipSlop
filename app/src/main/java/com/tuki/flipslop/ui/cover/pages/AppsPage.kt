@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tuki.flipslop.R
 import com.tuki.flipslop.apps.AppEntry
+import com.tuki.flipslop.data.IconShapeStyle
 import com.tuki.flipslop.ui.components.ShapedAppIcon
 import com.tuki.flipslop.ui.components.rememberIconShape
 import com.tuki.flipslop.ui.cover.CoverActions
@@ -86,6 +87,7 @@ fun AppsPage(state: CoverUiState, actions: CoverActions, modifier: Modifier = Mo
                         index = index,
                         pinned = app.key in pinnedKeys,
                         showPinMark = showAll,
+                        iconShape = state.iconShape,
                         onClick = { actions.launchApp(app) },
                         onLongClick = { actions.togglePin(app) },
                     )
@@ -101,6 +103,7 @@ private fun AppCell(
     index: Int,
     pinned: Boolean,
     showPinMark: Boolean,
+    iconShape: IconShapeStyle,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -120,7 +123,7 @@ private fun AppCell(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(contentAlignment = Alignment.TopEnd) {
-            ShapedAppIcon(app.icon, rememberIconShape(index), size = 64.dp)
+            ShapedAppIcon(app.icon, rememberIconShape(index, iconShape), size = 64.dp)
             if (showPinMark && pinned) {
                 Icon(
                     Icons.Rounded.PushPin,
