@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.BrightnessMedium
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -126,6 +127,9 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                 { shapes -> ClockStyleRow(settings.clockStyle, shapes) { s -> scope.launch { prefs.setClockStyle(s) } } },
                 switchRow(Icons.Rounded.AccessTime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, settings.idleAospClock) {
                     scope.launch { prefs.setIdleAospClock(it) }
+                },
+                switchRow(Icons.Rounded.Album, R.string.pref_media_art, R.string.pref_media_art_desc, settings.mediaArtBackground) {
+                    scope.launch { prefs.setMediaArtBackground(it) }
                 },
             ),
         )

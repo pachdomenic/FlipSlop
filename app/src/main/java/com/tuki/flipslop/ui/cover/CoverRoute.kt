@@ -78,6 +78,7 @@ fun rememberCoverUiState(
         edgePaddingDp = edgePaddingDp,
         clockStyle = settings.clockStyle,
         idleAospClock = settings.idleAospClock,
+        mediaArtBackground = settings.mediaArtBackground,
         dock = DockConfig(
             cameraSide = settings.cameraSide,
             cameraWidthDp = settings.cameraWidthDp,

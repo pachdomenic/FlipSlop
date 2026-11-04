@@ -42,6 +42,7 @@ data class CoverUiState(
     val edgePaddingDp: Int = 16,
     val clockStyle: ClockStyle = ClockStyle.STACKED,
     val idleAospClock: Boolean = true,
+    val mediaArtBackground: Boolean = true,
     val dock: DockConfig = DockConfig(),
     /** Draw the camera block (settings preview and screenshots). */
     val showCameraGuide: Boolean = false,

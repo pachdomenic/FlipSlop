@@ -8,6 +8,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,8 +40,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.tuki.flipslop.R
@@ -51,6 +57,8 @@ import com.tuki.flipslop.ui.cover.pages.MediaPage
 import com.tuki.flipslop.ui.cover.pages.NotificationsPage
 import com.tuki.flipslop.ui.cover.pages.TogglesPage
 import com.tuki.flipslop.ui.cover.pages.WidgetsPage
+import kotlin.math.abs
+import kotlin.math.min
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -111,17 +119,40 @@ fun CoverScreen(
 
     // No Surface at the root (the wallpaper shows through), so set the content color here.
     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
-        BoxWithConstraints(
-            modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        0f to Color.Black.copy(alpha = 0.55f),
-                        0.5f to Color.Black.copy(alpha = 0.35f),
-                        1f to Color.Black.copy(alpha = 0.7f),
+        BoxWithConstraints(modifier.fillMaxSize()) {
+            // Album art behind everything, fading in as the media page comes into view.
+            val art = state.media?.art
+            val mediaIndex = pages.indexOf(CoverPage.MEDIA)
+            val artVisibility by remember(mediaIndex) {
+                derivedStateOf {
+                    if (mediaIndex < 0) 0f
+                    else 1f - min(1f, abs(pager.currentPage + pager.currentPageOffsetFraction - mediaIndex))
+                }
+            }
+            if (state.mediaArtBackground && art != null && mediaIndex >= 0) {
+                val bitmap = remember(art) { art.asImageBitmap() }
+                Image(
+                    bitmap,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = artVisibility }
+                        .blur(32.dp),
+                )
+            }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Black.copy(alpha = 0.55f),
+                            0.5f to Color.Black.copy(alpha = 0.35f),
+                            1f to Color.Black.copy(alpha = 0.7f),
+                        ),
                     ),
-                ),
-        ) {
+            )
+
             val cameraWidth = dock.cameraWidthDp.dp.coerceIn(0.dp, maxOf(0.dp, maxWidth - MinDockWidth))
             val cameraLeft = dock.cameraSide == CameraSide.LEFT
 

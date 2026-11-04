@@ -201,6 +201,12 @@ fun DockMedia(state: CoverUiState, actions: CoverActions, onClick: () -> Unit, m
             .widthIn(max = DockMetrics.MediaMaxWidth)
             .clickable(onClick = onClick),
     ) {
+        Box(contentAlignment = Alignment.CenterStart) {
+        if (state.mediaArtBackground && art != null) {
+            // Album art as the pill's background, darkened so the title stays readable.
+            Image(art, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+            Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.45f)))
+        }
         Row(Modifier.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
@@ -219,6 +225,7 @@ fun DockMedia(state: CoverUiState, actions: CoverActions, onClick: () -> Unit, m
             Text(
                 media.title.ifBlank { media.appLabel },
                 style = MaterialTheme.typography.labelLarge,
+                color = if (state.mediaArtBackground && art != null) Color.White else Color.Unspecified,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
@@ -237,6 +244,7 @@ fun DockMedia(state: CoverUiState, actions: CoverActions, onClick: () -> Unit, m
                     )
                 }
             }
+        }
         }
     }
 }
