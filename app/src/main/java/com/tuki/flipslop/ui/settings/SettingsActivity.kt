@@ -1,7 +1,6 @@
 package com.tuki.flipslop.ui.settings
 
 import android.Manifest
-import android.app.Activity
 import android.appwidget.AppWidgetProviderInfo
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -13,34 +12,25 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.lifecycle.lifecycleScope
 import com.tuki.flipslop.R
 import com.tuki.flipslop.coverRuntime
 import com.tuki.flipslop.notifications.CoverNotificationListener
 import com.tuki.flipslop.service.CoverLauncher
 import com.tuki.flipslop.ui.theme.FlipSlopTheme
-import kotlinx.coroutines.launch
+import com.tuki.flipslop.widgets.WidgetAdder
 
 class SettingsActivity : ComponentActivity() {
 
     private val runtime by lazy { coverRuntime }
 
-    /** Widget id waiting for the bind dialog or its configure activity. */
-    private var pendingWidgetId = -1
+    private lateinit var widgetAdder: WidgetAdder
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { runtime.refreshCapabilities() }
 
-    private val bindWidget =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            val id = pendingWidgetId
-            if (id < 0) return@registerForActivityResult
-            if (result.resultCode == Activity.RESULT_OK) configureOrCommit(id) else discardPending()
-        }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        pendingWidgetId = savedInstanceState?.getInt(STATE_PENDING_WIDGET, -1) ?: -1
+        widgetAdder = WidgetAdder(this, runtime.widgets, savedInstanceState)
         enableEdgeToEdge()
         val initial = intent.getStringExtra(EXTRA_ROUTE)
         setContent {
@@ -56,7 +46,7 @@ class SettingsActivity : ComponentActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(STATE_PENDING_WIDGET, pendingWidgetId)
+        widgetAdder.onSaveInstanceState(outState)
     }
 
     override fun onStart() {
@@ -80,41 +70,7 @@ class SettingsActivity : ComponentActivity() {
     @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CONFIGURE_WIDGET) {
-            if (resultCode == Activity.RESULT_OK && pendingWidgetId >= 0) commitPending() else discardPending()
-        }
-    }
-
-    private fun configureOrCommit(id: Int) {
-        if (!runtime.widgets.needsConfigure(id)) {
-            commitPending()
-            return
-        }
-        try {
-            runtime.widgets.host.startAppWidgetConfigureActivityForResult(
-                this,
-                id,
-                0,
-                REQUEST_CONFIGURE_WIDGET,
-                null,
-            )
-        } catch (e: ActivityNotFoundException) {
-            commitPending()
-        } catch (e: SecurityException) {
-            commitPending()
-        }
-    }
-
-    private fun commitPending() {
-        val id = pendingWidgetId
-        pendingWidgetId = -1
-        if (id >= 0) lifecycleScope.launch { runtime.widgets.commit(id) }
-    }
-
-    private fun discardPending() {
-        val id = pendingWidgetId
-        pendingWidgetId = -1
-        if (id >= 0) runtime.widgets.discard(id)
+        widgetAdder.onActivityResult(requestCode, resultCode)
     }
 
     private fun open(intent: Intent) {
@@ -154,20 +110,7 @@ class SettingsActivity : ComponentActivity() {
             )
         }
 
-        override fun addWidget(provider: AppWidgetProviderInfo) {
-            val widgets = runtime.widgets
-            val id = widgets.allocate()
-            pendingWidgetId = id
-            if (widgets.bindIfAllowed(id, provider.provider)) {
-                configureOrCommit(id)
-            } else {
-                try {
-                    bindWidget.launch(widgets.bindIntent(id, provider.provider))
-                } catch (e: ActivityNotFoundException) {
-                    discardPending()
-                }
-            }
-        }
+        override fun addWidget(provider: AppWidgetProviderInfo) = widgetAdder.add(provider)
 
         override fun finish() = this@SettingsActivity.finish()
     }
@@ -177,8 +120,6 @@ class SettingsActivity : ComponentActivity() {
         const val ROUTE_WIDGETS = "widgets"
         const val ROUTE_APPS = "apps"
         const val ROUTE_PAGES = "pages"
-        private const val STATE_PENDING_WIDGET = "pending_widget"
-        private const val REQUEST_CONFIGURE_WIDGET = 0x57
     }
 }
 

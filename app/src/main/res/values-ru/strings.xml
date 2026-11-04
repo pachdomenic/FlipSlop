@@ -31,6 +31,7 @@
     <string name="clear_all">Очистить всё</string>
     <string name="reply_hint">Ответ</string>
     <string name="send">Отправить</string>
+    <string name="close">Закрыть</string>
 
     <string name="media_empty">Сейчас ничего не играет</string>
     <string name="media_need_access">Разрешите доступ к уведомлениям, чтобы управлять музыкой с обложки</string>

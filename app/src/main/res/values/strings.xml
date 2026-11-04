@@ -32,6 +32,7 @@
     <string name="clear_all">Clear all</string>
     <string name="reply_hint">Reply</string>
     <string name="send">Send</string>
+    <string name="close">Close</string>
 
     <string name="media_empty">Nothing is playing</string>
     <string name="media_need_access">Allow notification access to control music from the cover</string>

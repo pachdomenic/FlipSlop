@@ -8,9 +8,18 @@ import android.view.RoundedCorner
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -29,6 +38,7 @@ import com.tuki.flipslop.notifications.CoverNotification
 import com.tuki.flipslop.notifications.CoverNotificationListener
 import com.tuki.flipslop.ui.settings.SettingsActivity
 import com.tuki.flipslop.ui.theme.FlipSlopTheme
+import com.tuki.flipslop.widgets.WidgetAdder
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -42,6 +52,8 @@ class CoverActivity : ComponentActivity() {
     private val runtime by lazy { coverRuntime }
     private var locked by mutableStateOf(false)
     private var edgePadding by mutableIntStateOf(16)
+    private var pickingWidget by mutableStateOf(false)
+    private lateinit var widgetAdder: WidgetAdder
 
     /** Opened from settings for a preview on the inner screen: do not auto-close. */
     private var stay = false
@@ -49,6 +61,7 @@ class CoverActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         stay = intent.getBooleanExtra(EXTRA_STAY, false)
+        widgetAdder = WidgetAdder(this, runtime.widgets, savedInstanceState)
         enableEdgeToEdge()
         window.attributes = window.attributes.apply {
             layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
@@ -61,11 +74,31 @@ class CoverActivity : ComponentActivity() {
         setContent {
             FlipSlopTheme(darkTheme = true) {
                 val state = rememberCoverUiState(runtime, locked, edgePadding)
-                CoverScreen(
-                    state = state,
-                    actions = actions,
-                    widget = { id, modifier -> HostedWidget(runtime, id, modifier) },
-                )
+                Box {
+                    CoverScreen(
+                        state = state,
+                        actions = actions,
+                        widget = { id, modifier -> HostedWidget(runtime, id, modifier) },
+                    )
+                    BackHandler(enabled = pickingWidget) { pickingWidget = false }
+                    AnimatedVisibility(
+                        visible = pickingWidget,
+                        enter = fadeIn() + slideInVertically { it / 3 },
+                        exit = fadeOut() + slideOutVertically { it / 3 },
+                    ) {
+                        val providers = remember { runtime.widgets.providers() }
+                        CoverWidgetPicker(
+                            providers = providers,
+                            topInset = edgePadding.dp,
+                            bottomInset = state.bottomInsetDp.dp,
+                            onPick = { info ->
+                                pickingWidget = false
+                                unlocked { widgetAdder.add(info) }
+                            },
+                            onClose = { pickingWidget = false },
+                        )
+                    }
+                }
             }
         }
 
@@ -78,6 +111,18 @@ class CoverActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        widgetAdder.onSaveInstanceState(outState)
+    }
+
+    // AppWidgetHost only offers the startActivityForResult based configure flow.
+    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        widgetAdder.onActivityResult(requestCode, resultCode)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -185,8 +230,8 @@ class CoverActivity : ComponentActivity() {
         override fun launchApp(entry: AppEntry) = runtime.apps.launch(this@CoverActivity, entry)
         override fun togglePin(entry: AppEntry) = runtime.apps.togglePin(entry)
 
-        override fun addWidget() = unlocked {
-            startOnCover(Intent(this@CoverActivity, SettingsActivity::class.java).putExtra(SettingsActivity.EXTRA_ROUTE, SettingsActivity.ROUTE_WIDGETS))
+        override fun addWidget() {
+            pickingWidget = true
         }
 
         override fun setTorch(on: Boolean) {

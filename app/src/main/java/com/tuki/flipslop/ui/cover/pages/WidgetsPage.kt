@@ -1,16 +1,25 @@
 package com.tuki.flipslop.ui.cover.pages
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Widgets
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -37,7 +46,18 @@ fun WidgetsPage(
         return
     }
     val pager = rememberPagerState { state.widgetIds.size }
-    VerticalPager(state = pager, modifier = modifier, key = { state.widgetIds[it] }) { index ->
+    Column(modifier) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            stringResource(R.string.page_widgets),
+            style = MaterialTheme.typography.titleLargeEmphasized,
+            modifier = Modifier.weight(1f),
+        )
+        FilledTonalIconButton(onClick = actions::addWidget, shapes = IconButtonDefaults.shapes()) {
+            Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.widgets_add))
+        }
+    }
+    VerticalPager(state = pager, modifier = Modifier.weight(1f).padding(top = 8.dp), key = { state.widgetIds[it] }) { index ->
         Surface(
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.6f),
@@ -47,5 +67,6 @@ fun WidgetsPage(
                 widget(state.widgetIds[index], Modifier.fillMaxSize())
             }
         }
+    }
     }
 }
