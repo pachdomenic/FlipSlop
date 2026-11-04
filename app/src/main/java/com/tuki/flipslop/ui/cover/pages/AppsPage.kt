@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -58,15 +59,21 @@ fun AppsPage(state: CoverUiState, actions: CoverActions, modifier: Modifier = Mo
                 onCheckedChange = { showAll = false },
                 shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
                 modifier = Modifier.weight(1f),
-                icon = { Icon(Icons.Rounded.PushPin, contentDescription = null) },
-            ) { Text(stringResource(R.string.apps_pinned)) }
+            ) {
+                Icon(Icons.Rounded.PushPin, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.apps_pinned))
+            }
             ToggleButton(
                 checked = showAll,
                 onCheckedChange = { showAll = true },
                 shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
                 modifier = Modifier.weight(1f),
-                icon = { Icon(Icons.Rounded.Apps, contentDescription = null) },
-            ) { Text(stringResource(R.string.apps_all)) }
+            ) {
+                Icon(Icons.Rounded.Apps, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.apps_all))
+            }
         }
         Spacer(Modifier.height(12.dp))
         if (apps.isEmpty()) {

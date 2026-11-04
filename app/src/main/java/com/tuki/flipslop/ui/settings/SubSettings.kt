@@ -19,8 +19,6 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -34,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -68,18 +67,18 @@ fun PagesSettings(runtime: CoverRuntime, onBack: () -> Unit) {
             )
         }
         item(key = "pages") {
-            Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+            Column(verticalArrangement = Arrangement.spacedBy(SegmentedGap)) {
                 ordered.forEachIndexed { index, page ->
                     val on = page in enabled
                     val position = enabled.indexOf(page)
-                    ListItem(
+                    SettingsItem(
                         checked = on,
                         onCheckedChange = { checked ->
-                            if (page == CoverPage.HOME) return@ListItem
+                            if (page == CoverPage.HOME) return@SettingsItem
                             val next = if (checked) enabled + page else enabled - page
                             scope.launch { runtime.prefs.setPages(next) }
                         },
-                        shapes = ListItemDefaults.segmentedShapes(index, ordered.size),
+                        shapes = segmentedShape(index, ordered.size),
                         leadingContent = { Icon(page.icon, contentDescription = null) },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -138,11 +137,11 @@ fun AppsSettings(runtime: CoverRuntime, onBack: () -> Unit) {
         }
         items(filtered, key = { it.key }) { app ->
             val index = filtered.indexOf(app)
-            ListItem(
+            SettingsItem(
                 checked = app.key in pinned,
                 onCheckedChange = { runtime.apps.togglePin(app) },
-                shapes = ListItemDefaults.segmentedShapes(index, filtered.size),
-                modifier = Modifier.padding(bottom = ListItemDefaults.SegmentedGap),
+                shapes = segmentedShape(index, filtered.size),
+                modifier = Modifier.padding(bottom = SegmentedGap),
                 leadingContent = { ShapedAppIcon(
                         app.icon,
                         rememberIconShape(index, settings.iconShape),
@@ -169,13 +168,13 @@ fun WidgetsSettings(runtime: CoverRuntime, host: SettingsHost, onBack: () -> Uni
     ) {
         if (!picking) {
             item(key = "added") {
-                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                Column(verticalArrangement = Arrangement.spacedBy(SegmentedGap)) {
                     val ids = settings.widgetIds
                     ids.forEachIndexed { index, id ->
                         val info = runtime.widgets.info(id)
-                        ListItem(
+                        SettingsItem(
                             onClick = {},
-                            shapes = ListItemDefaults.segmentedShapes(index, ids.size + 1),
+                            shapes = segmentedShape(index, ids.size + 1),
                             supportingContent = { info?.let { Text(it.provider.packageName) } },
                             trailingContent = {
                                 Row {
@@ -192,9 +191,9 @@ fun WidgetsSettings(runtime: CoverRuntime, host: SettingsHost, onBack: () -> Uni
                             },
                         ) { Text(info?.loadLabel(context.packageManager) ?: "#$id") }
                     }
-                    ListItem(
+                    SettingsItem(
                         onClick = { picking = true },
-                        shapes = ListItemDefaults.segmentedShapes(ids.size, ids.size + 1),
+                        shapes = segmentedShape(ids.size, ids.size + 1),
                         leadingContent = { Icon(Icons.Rounded.Add, contentDescription = null) },
                     ) { Text(stringResource(R.string.widgets_add)) }
                 }

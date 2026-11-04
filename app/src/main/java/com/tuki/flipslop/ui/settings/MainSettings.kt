@@ -43,13 +43,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
-import androidx.compose.material3.rememberSliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -57,10 +54,13 @@ import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -69,7 +69,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.tuki.flipslop.BuildConfig
 import com.tuki.flipslop.R
 import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.core.CapabilityState
@@ -134,7 +133,7 @@ fun CategorySettings(
     val scope = rememberCoroutineScope()
     val prefs = runtime.prefs
 
-    val content: List<@Composable (ListItemShapes) -> Unit> = when (route) {
+    val content: List<@Composable (Shape) -> Unit> = when (route) {
         Route.ACCESS -> permissionRows(caps, host)
 
         Route.BEHAVIOUR -> rows(
@@ -309,11 +308,19 @@ fun CategorySettings(
 
         Route.DIAGNOSTICS -> diagnosticsRows(runtime, fold, caps) + rows(
             { shapes ->
-                ListItem(
+                SettingsItem(
                     onClick = {},
                     shapes = shapes,
                     supportingContent = { Text(stringResource(R.string.about_text)) },
-                ) { Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME)) }
+                ) {
+                    // From the package, not BuildConfig: the Soong build has no BuildConfig.
+                    val context = LocalContext.current
+                    val version = remember {
+                        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
+                            .getOrNull().orEmpty()
+                    }
+                    Text(stringResource(R.string.about_version, version))
+                }
             },
         )
 
@@ -329,7 +336,7 @@ fun CategorySettings(
     }
 }
 
-private fun rows(vararg row: @Composable (ListItemShapes) -> Unit): List<@Composable (ListItemShapes) -> Unit> = row.toList()
+private fun rows(vararg row: @Composable (Shape) -> Unit): List<@Composable (Shape) -> Unit> = row.toList()
 
 private fun categoryRow(route: Route, icon: ImageVector, desc: Int, navigate: (Route) -> Unit) =
     categoryRow(route, icon, summary = { stringResource(desc) }, navigate)
@@ -339,8 +346,8 @@ private fun categoryRow(
     icon: ImageVector,
     summary: @Composable () -> String,
     navigate: (Route) -> Unit,
-): @Composable (ListItemShapes) -> Unit = { shapes ->
-    ListItem(
+): @Composable (Shape) -> Unit = { shapes ->
+    SettingsItem(
         onClick = { navigate(route) },
         shapes = shapes,
         leadingContent = { Icon(icon, contentDescription = null) },
@@ -450,7 +457,7 @@ private data class Perm(
     val onGrant: () -> Unit,
 )
 
-private fun permissionRows(caps: CapabilityState, host: SettingsHost): List<@Composable (ListItemShapes) -> Unit> {
+private fun permissionRows(caps: CapabilityState, host: SettingsHost): List<@Composable (Shape) -> Unit> {
     val priv = caps.tier == Tier.PRIVILEGED
     val perms = listOf(
         Perm(Icons.Rounded.Notifications, R.string.perm_post, R.string.perm_post_desc, caps.postNotifications, host::grantPostNotifications),
@@ -461,8 +468,8 @@ private fun permissionRows(caps: CapabilityState, host: SettingsHost): List<@Com
         Perm(Icons.Rounded.BrightnessMedium, R.string.perm_write_settings, R.string.perm_write_settings_desc, caps.writeSettings, host::grantWriteSettings),
     )
     return perms.map { p ->
-        { shapes: ListItemShapes ->
-            ListItem(
+        { shapes: Shape ->
+            SettingsItem(
                 onClick = p.onGrant,
                 shapes = shapes,
                 leadingContent = { Icon(p.icon, contentDescription = null) },
@@ -486,8 +493,8 @@ private fun switchRow(
     checked: Boolean,
     enabled: Boolean = true,
     onChange: (Boolean) -> Unit,
-): @Composable (ListItemShapes) -> Unit = { shapes ->
-    ListItem(
+): @Composable (Shape) -> Unit = { shapes ->
+    SettingsItem(
         checked = checked,
         onCheckedChange = onChange,
         enabled = enabled,
@@ -498,8 +505,8 @@ private fun switchRow(
     ) { Text(stringResource(title)) }
 }
 
-private fun navRow(icon: ImageVector, title: Int, desc: Int, onClick: () -> Unit): @Composable (ListItemShapes) -> Unit = { shapes ->
-    ListItem(
+private fun navRow(icon: ImageVector, title: Int, desc: Int, onClick: () -> Unit): @Composable (Shape) -> Unit = { shapes ->
+    SettingsItem(
         onClick = onClick,
         shapes = shapes,
         leadingContent = { Icon(icon, contentDescription = null) },
@@ -509,8 +516,8 @@ private fun navRow(icon: ImageVector, title: Int, desc: Int, onClick: () -> Unit
 }
 
 @Composable
-private fun ClockStyleRow(style: ClockStyle, shapes: ListItemShapes, onChange: (ClockStyle) -> Unit) {
-    ListItem(
+private fun ClockStyleRow(style: ClockStyle, shapes: Shape, onChange: (ClockStyle) -> Unit) {
+    SettingsItem(
         onClick = {},
         shapes = shapes,
         leadingContent = { Icon(Icons.Rounded.AccessTime, contentDescription = null) },
@@ -547,12 +554,12 @@ private fun <T> ChoiceRow(
     options: List<T>,
     selected: T,
     label: @Composable (T) -> String,
-    shapes: ListItemShapes,
+    shapes: Shape,
     footer: String? = null,
     content: @Composable (T) -> Unit = { Text(label(it), maxLines = 1) },
     onChange: (T) -> Unit,
 ) {
-    ListItem(
+    SettingsItem(
         onClick = {},
         shapes = shapes,
         leadingContent = { Icon(icon, contentDescription = null) },
@@ -602,8 +609,8 @@ private val IconShapeStyle.labelRes: Int
     }
 
 @Composable
-private fun CameraSideRow(side: CameraSide, shapes: ListItemShapes, onChange: (CameraSide) -> Unit) {
-    ListItem(
+private fun CameraSideRow(side: CameraSide, shapes: Shape, onChange: (CameraSide) -> Unit) {
+    SettingsItem(
         onClick = {},
         shapes = shapes,
         leadingContent = { Icon(Icons.Rounded.PhotoCamera, contentDescription = null) },
@@ -636,38 +643,39 @@ private fun SliderRow(
     max: Int,
     title: Int,
     desc: Int,
-    shapes: ListItemShapes,
+    shapes: Shape,
     onChange: (Int) -> Unit,
 ) {
-    val slider = rememberSliderState(value = value.toFloat(), trackRange = 0f..max.toFloat())
-    ListItem(
+    var local by remember(value) { mutableFloatStateOf(value.toFloat()) }
+    SettingsItem(
         onClick = {},
         shapes = shapes,
         supportingContent = {
             Column {
                 Text(stringResource(desc))
                 Slider(
-                    state = slider,
-                    onValueChange = { slider.value = it },
-                    onValueChangeFinished = { onChange(slider.value.toInt()) },
+                    value = local,
+                    onValueChange = { local = it },
+                    onValueChangeFinished = { onChange(local.toInt()) },
+                    valueRange = 0f..max.toFloat(),
                 )
             }
         },
-    ) { Text(stringResource(title, slider.value.toInt())) }
+    ) { Text(stringResource(title, local.toInt())) }
 }
 
 private fun diagnosticsRows(
     runtime: CoverRuntime,
     fold: FoldSnapshot,
     caps: CapabilityState,
-): List<@Composable (ListItemShapes) -> Unit> {
-    fun row(title: Int, value: String): @Composable (ListItemShapes) -> Unit = { shapes ->
-        ListItem(onClick = {}, shapes = shapes, supportingContent = { Text(value) }) { Text(stringResource(title)) }
+): List<@Composable (Shape) -> Unit> {
+    fun row(title: Int, value: String): @Composable (Shape) -> Unit = { shapes ->
+        SettingsItem(onClick = {}, shapes = shapes, supportingContent = { Text(value) }) { Text(stringResource(title)) }
     }
     val states = SystemConfig.foldedDeviceStates.sorted().joinToString(",").ifEmpty { "—" }
     return listOf(
         { shapes ->
-            ListItem(onClick = {}, shapes = shapes, supportingContent = { Text(stringResource(fold.source.labelRes)) }) {
+            SettingsItem(onClick = {}, shapes = shapes, supportingContent = { Text(stringResource(fold.source.labelRes)) }) {
                 Text(stringResource(fold.state.labelRes))
             }
         },
@@ -683,7 +691,7 @@ private fun diagnosticsRows(
         { shapes ->
             val scope = rememberCoroutineScope()
             val known by runtime.prefs.knownPanels.collectAsStateWithLifecycle(emptySet())
-            ListItem(
+            SettingsItem(
                 onClick = { scope.launch { runtime.prefs.forgetPanels() } },
                 shapes = shapes,
                 supportingContent = { Text(known.joinToString().ifEmpty { "—" }) },

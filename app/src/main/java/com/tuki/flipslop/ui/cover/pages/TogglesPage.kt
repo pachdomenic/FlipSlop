@@ -27,11 +27,13 @@ import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
-import androidx.compose.material3.rememberSliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -84,8 +86,9 @@ private fun Tile(icon: ImageVector, label: Int, checked: Boolean, onChange: (Boo
         checked = checked,
         onCheckedChange = onChange,
         modifier = Modifier.fillMaxWidth().height(56.dp),
-        icon = { Icon(icon, contentDescription = null) },
     ) {
+        Icon(icon, contentDescription = null)
+        Spacer(Modifier.width(8.dp))
         Text(stringResource(label), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
@@ -93,17 +96,16 @@ private fun Tile(icon: ImageVector, label: Int, checked: Boolean, onChange: (Boo
 @Composable
 private fun Brightness(state: CoverUiState, actions: CoverActions) {
     val t = state.toggles
-    val slider = rememberSliderState(value = t.brightness)
-    // Follow outside changes (auto brightness, other apps) while the user is not dragging.
-    LaunchedEffect(t.brightness) { slider.value = t.brightness }
+    // Follows outside changes (auto brightness, other apps) through the key.
+    var level by remember(t.brightness) { mutableFloatStateOf(t.brightness) }
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.BrightnessMedium, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.width(12.dp))
             Slider(
-                state = slider,
+                value = level,
                 onValueChange = {
-                    slider.value = it
+                    level = it
                     actions.setBrightness(it)
                 },
                 modifier = Modifier.weight(1f),
