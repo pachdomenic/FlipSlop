@@ -133,8 +133,8 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
             title = titleCamera,
             key = "camera",
             rows = listOf(
-                switchRow(Icons.Rounded.ViewCarousel, R.string.pref_dock_toolbar, R.string.pref_dock_toolbar_desc, settings.dockToolbar) {
-                    scope.launch { prefs.setDockToolbar(it) }
+                switchRow(Icons.Rounded.ViewCarousel, R.string.pref_page_bar_always, R.string.pref_page_bar_always_desc, settings.pageBarAlways) {
+                    scope.launch { prefs.setPageBarAlways(it) }
                 },
                 switchRow(Icons.Rounded.Notifications, R.string.pref_dock_notifications, R.string.pref_dock_notifications_desc, settings.dockNotifications) {
                     scope.launch { prefs.setDockNotifications(it) }

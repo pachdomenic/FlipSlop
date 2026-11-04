@@ -1,12 +1,11 @@
 package com.tuki.flipslop.ui.cover
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -37,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,63 +56,92 @@ import com.tuki.flipslop.ui.components.IconImage
 object DockMetrics {
     val MediaHeight = 44.dp
     val NotificationsHeight = 36.dp
-    val ToolbarHeight = 48.dp
+    val DotsHeight = 28.dp
     val FloatingToolbarHeight = 64.dp
     val Gap = 6.dp
     val BottomMargin = 8.dp
 }
 
-/** Page switcher. `compact` shrinks it to fit beside the camera block. */
+/** Page switcher, an expressive floating toolbar. */
 @Composable
 fun PageBar(
     pages: List<CoverPage>,
     current: Int,
     notificationCount: Int,
-    compact: Boolean,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val buttonSize: Dp = if (compact) 40.dp else 48.dp
-    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides if (compact) 0.dp else 48.dp) {
-        HorizontalFloatingToolbar(
-            expanded = true,
-            modifier = modifier.then(if (compact) Modifier.horizontalScroll(rememberScrollState()) else Modifier),
-            colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
-            contentPadding = if (compact) PaddingValues(4.dp) else FloatingToolbarDefaults.ContentPadding,
-            expandedShadowElevation = if (compact) 0.dp else FloatingToolbarDefaults.ContainerExpandedElevation,
-        ) {
-            pages.forEachIndexed { index, page ->
-                val selected = current == index
-                val label = stringResource(page.labelRes)
-                val icon: @Composable () -> Unit = {
-                    val count = if (page == CoverPage.NOTIFICATIONS) notificationCount else 0
-                    if (count > 0 && !selected) {
-                        BadgedBox(badge = { Badge { Text(count.coerceAtMost(99).toString()) } }) {
-                            Icon(page.icon, contentDescription = label)
-                        }
-                    } else {
+    HorizontalFloatingToolbar(
+        expanded = true,
+        modifier = modifier,
+        colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
+    ) {
+        pages.forEachIndexed { index, page ->
+            val selected = current == index
+            val label = stringResource(page.labelRes)
+            val icon: @Composable () -> Unit = {
+                val count = if (page == CoverPage.NOTIFICATIONS) notificationCount else 0
+                if (count > 0 && !selected) {
+                    BadgedBox(badge = { Badge { Text(count.coerceAtMost(99).toString()) } }) {
                         Icon(page.icon, contentDescription = label)
                     }
-                }
-                if (selected) {
-                    FilledIconButton(
-                        onClick = { onSelect(index) },
-                        modifier = Modifier.size(buttonSize),
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            contentColor = MaterialTheme.colorScheme.primaryContainer,
-                        ),
-                        content = icon,
-                    )
                 } else {
-                    IconButton(
-                        onClick = { onSelect(index) },
-                        modifier = Modifier.size(buttonSize),
-                        shapes = IconButtonDefaults.shapes(),
-                        content = icon,
-                    )
+                    Icon(page.icon, contentDescription = label)
                 }
+            }
+            if (selected) {
+                FilledIconButton(
+                    onClick = { onSelect(index) },
+                    shapes = IconButtonDefaults.shapes(),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        contentColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
+                    content = icon,
+                )
+            } else {
+                IconButton(
+                    onClick = { onSelect(index) },
+                    shapes = IconButtonDefaults.shapes(),
+                    content = icon,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Where you are among the pages. Tapping it brings out the page bar; the
+ * current page is an elongated pill, the others are dots.
+ */
+@Composable
+fun PageDots(pages: Int, current: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.75f),
+        modifier = modifier.height(DockMetrics.DotsHeight).clickable(onClickLabel = stringResource(R.string.show_pages), onClick = onClick),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            repeat(pages) { i ->
+                val selected = i == current
+                val width by animateDpAsState(
+                    targetValue = if (selected) 18.dp else 6.dp,
+                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                    label = "dot",
+                )
+                Box(
+                    Modifier
+                        .size(width, 6.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (selected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        ),
+                )
             }
         }
     }

@@ -124,8 +124,9 @@
     <string name="pref_idle_clock_desc">Like the AOSP lock screen while there are no notifications and nothing is playing</string>
 
     <string name="section_camera">Near the camera</string>
-    <string name="pref_dock_toolbar">Page bar</string>
-    <string name="pref_dock_toolbar_desc">Page switcher beside the cameras instead of above them</string>
+    <string name="pref_page_bar_always">Always show the page bar</string>
+    <string name="pref_page_bar_always_desc">Otherwise it hides; tap the page dots next to the cameras to bring it out</string>
+    <string name="show_pages">Show pages</string>
     <string name="pref_dock_notifications">Notification icons</string>
     <string name="pref_dock_notifications_desc">Icons of apps with notifications, tap to open them</string>
     <string name="pref_dock_media">Now playing</string>

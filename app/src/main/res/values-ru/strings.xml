@@ -124,8 +124,9 @@
     <string name="pref_idle_clock_desc">Как на экране блокировки AOSP, пока нет уведомлений и ничего не играет</string>
 
     <string name="section_camera">Возле камеры</string>
-    <string name="pref_dock_toolbar">Панель страниц</string>
-    <string name="pref_dock_toolbar_desc">Переключатель страниц рядом с камерами, а не над ними</string>
+    <string name="pref_page_bar_always">Всегда показывать панель страниц</string>
+    <string name="pref_page_bar_always_desc">Иначе она спрятана, нажмите на точки страниц у камер, чтобы её вызвать</string>
+    <string name="show_pages">Показать страницы</string>
     <string name="pref_dock_notifications">Значки уведомлений</string>
     <string name="pref_dock_notifications_desc">Иконки приложений с уведомлениями, нажмите, чтобы открыть их</string>
     <string name="pref_dock_media">Сейчас играет</string>

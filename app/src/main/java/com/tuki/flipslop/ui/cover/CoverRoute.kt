@@ -81,7 +81,7 @@ fun rememberCoverUiState(
         dock = DockConfig(
             cameraSide = settings.cameraSide,
             cameraWidthDp = settings.cameraWidthDp,
-            toolbar = settings.dockToolbar,
+            pageBarAlways = settings.pageBarAlways,
             notifications = settings.dockNotifications,
             media = settings.dockMedia,
         ),

@@ -1,6 +1,13 @@
 package com.tuki.flipslop.ui.cover
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -21,6 +28,11 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +49,7 @@ import com.tuki.flipslop.ui.cover.pages.MediaPage
 import com.tuki.flipslop.ui.cover.pages.NotificationsPage
 import com.tuki.flipslop.ui.cover.pages.TogglesPage
 import com.tuki.flipslop.ui.cover.pages.WidgetsPage
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -73,7 +86,7 @@ fun CoverScreen(
     val dockRows = listOfNotNull(
         DockMetrics.MediaHeight.takeIf { dockMedia },
         DockMetrics.NotificationsHeight.takeIf { dockNotifications },
-        DockMetrics.ToolbarHeight.takeIf { dock.toolbar },
+        DockMetrics.DotsHeight.takeIf { !dock.pageBarAlways },
     )
     val dockHeight = if (dockRows.isEmpty()) {
         0.dp
@@ -81,7 +94,17 @@ fun CoverScreen(
         dockRows.fold(0.dp) { acc, h -> acc + h } + DockMetrics.Gap * (dockRows.size - 1) + DockMetrics.BottomMargin
     }
     val reserved = maxOf(bottom, dockHeight)
-    val contentBottom = if (dock.toolbar) reserved + 8.dp else reserved + DockMetrics.FloatingToolbarHeight + 20.dp
+    val contentBottom = if (dock.pageBarAlways) reserved + DockMetrics.FloatingToolbarHeight + 20.dp else reserved + 8.dp
+
+    // The page bar hides behind the page dots and comes out on tap for a few seconds.
+    var barShown by remember { mutableStateOf(false) }
+    val barVisible = dock.pageBarAlways || barShown
+    LaunchedEffect(barShown, pager.currentPage) {
+        if (barShown && !dock.pageBarAlways) {
+            delay(PAGE_BAR_TIMEOUT_MS)
+            barShown = false
+        }
+    }
 
     // No Surface at the root (the wallpaper shows through), so set the content color here.
     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
@@ -157,33 +180,36 @@ fun CoverScreen(
                     if (dockNotifications) {
                         DockNotifications(state, onClick = { goTo(CoverPage.NOTIFICATIONS) })
                     }
-                    if (dock.toolbar) {
-                        PageBar(
-                            pages = pages,
+                    if (!dock.pageBarAlways) {
+                        PageDots(
+                            pages = pages.size,
                             current = pager.currentPage,
-                            notificationCount = state.notifications.size,
-                            compact = true,
-                            onSelect = { scope.launch { pager.animateScrollToPage(it) } },
+                            onClick = { barShown = !barShown },
                         )
                     }
                 }
             }
 
-            if (!dock.toolbar) {
+            AnimatedVisibility(
+                visible = barVisible,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = reserved + 12.dp),
+                enter = fadeIn() + scaleIn(initialScale = 0.85f) + slideInVertically { it / 2 },
+                exit = fadeOut() + scaleOut(targetScale = 0.85f) + slideOutVertically { it / 2 },
+            ) {
                 PageBar(
                     pages = pages,
                     current = pager.currentPage,
                     notificationCount = state.notifications.size,
-                    compact = false,
                     onSelect = { scope.launch { pager.animateScrollToPage(it) } },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = reserved + 12.dp),
                 )
             }
         }
     }
 }
+
+private const val PAGE_BAR_TIMEOUT_MS = 4_000L
 
 /** The dock never gets narrower than this, whatever the camera width setting says. */
 private val MinDockWidth = 160.dp

@@ -79,7 +79,7 @@ class CoverScreenshotTest {
             notifications = if (idle) emptyList() else full.notifications,
             media = if (idle) null else full.media,
             locked = idle,
-            dock = full.dock.copy(toolbar = docked, notifications = docked, media = docked),
+            dock = full.dock.copy(pageBarAlways = !docked, notifications = docked, media = docked),
         )
         // The clock, wavy progress and media ticker never go idle: drive time by hand.
         compose.mainClock.autoAdvance = false

@@ -16,7 +16,8 @@ data class BatteryInfo(val level: Int, val charging: Boolean)
 data class DockConfig(
     val cameraSide: CameraSide = CameraSide.LEFT,
     val cameraWidthDp: Int = 0,
-    val toolbar: Boolean = true,
+    /** Keep the page bar out instead of hiding it behind page dots. */
+    val pageBarAlways: Boolean = false,
     val notifications: Boolean = true,
     val media: Boolean = true,
 )

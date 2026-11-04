@@ -46,8 +46,9 @@ data class CoverSettings(
     val idleAospClock: Boolean = true,
     val cameraSide: CameraSide = DeviceProfile.current.coverCameraSide,
     val cameraWidthDp: Int = DeviceProfile.current.coverCameraWidthDp,
+    /** Page bar stays out; otherwise it hides behind page dots until tapped. */
+    val pageBarAlways: Boolean = false,
     /** What lives in the strip next to the camera block. */
-    val dockToolbar: Boolean = true,
     val dockNotifications: Boolean = true,
     val dockMedia: Boolean = true,
 )
@@ -71,7 +72,7 @@ class CoverPrefs(context: Context) {
             cameraSide = p[CAMERA_SIDE]?.let { runCatching { CameraSide.valueOf(it) }.getOrNull() }
                 ?: DeviceProfile.current.coverCameraSide,
             cameraWidthDp = p[CAMERA_WIDTH] ?: DeviceProfile.current.coverCameraWidthDp,
-            dockToolbar = p[DOCK_TOOLBAR] ?: true,
+            pageBarAlways = p[PAGE_BAR_ALWAYS] ?: false,
             dockNotifications = p[DOCK_NOTIFICATIONS] ?: true,
             dockMedia = p[DOCK_MEDIA] ?: true,
         )
@@ -99,7 +100,7 @@ class CoverPrefs(context: Context) {
     suspend fun setIdleAospClock(value: Boolean) = store.edit { it[IDLE_AOSP_CLOCK] = value }
     suspend fun setCameraSide(side: CameraSide) = store.edit { it[CAMERA_SIDE] = side.name }
     suspend fun setCameraWidth(dp: Int) = store.edit { it[CAMERA_WIDTH] = dp.coerceIn(0, MAX_CAMERA_WIDTH_DP) }
-    suspend fun setDockToolbar(value: Boolean) = store.edit { it[DOCK_TOOLBAR] = value }
+    suspend fun setPageBarAlways(value: Boolean) = store.edit { it[PAGE_BAR_ALWAYS] = value }
     suspend fun setDockNotifications(value: Boolean) = store.edit { it[DOCK_NOTIFICATIONS] = value }
     suspend fun setDockMedia(value: Boolean) = store.edit { it[DOCK_MEDIA] = value }
     suspend fun setPages(pages: List<CoverPage>) = store.edit {
@@ -161,7 +162,7 @@ class CoverPrefs(context: Context) {
         private val IDLE_AOSP_CLOCK = booleanPreferencesKey("idle_aosp_clock")
         private val CAMERA_SIDE = stringPreferencesKey("camera_side")
         private val CAMERA_WIDTH = intPreferencesKey("camera_width_dp")
-        private val DOCK_TOOLBAR = booleanPreferencesKey("dock_toolbar")
+        private val PAGE_BAR_ALWAYS = booleanPreferencesKey("page_bar_always")
         private val DOCK_NOTIFICATIONS = booleanPreferencesKey("dock_notifications")
         private val DOCK_MEDIA = booleanPreferencesKey("dock_media")
     }
