@@ -162,27 +162,48 @@ fun CoverScreen(
             val cameraWidth = dock.cameraWidthDp.dp.coerceIn(0.dp, maxOf(0.dp, maxWidth - MinDockWidth))
             val cameraLeft = dock.cameraSide == CameraSide.LEFT
 
-            HorizontalPager(
-                state = pager,
-                modifier = Modifier.fillMaxSize(),
-                beyondViewportPageCount = 1,
-                key = { pages[it].name },
-            ) { index ->
-                val pageModifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = contentBottom)
-                when (pages[index]) {
-                    CoverPage.HOME -> HomePage(
-                        state = state,
-                        actions = actions,
-                        onOpenNotifications = { goTo(CoverPage.NOTIFICATIONS) },
-                        modifier = pageModifier,
-                    )
-                    CoverPage.NOTIFICATIONS -> NotificationsPage(state, actions, pageModifier)
-                    CoverPage.MEDIA -> MediaPage(state, actions, pageModifier)
-                    CoverPage.APPS -> AppsPage(state, actions, pageModifier)
-                    CoverPage.WIDGETS -> WidgetsPage(state, actions, pageModifier, widget)
-                    CoverPage.TOGGLES -> TogglesPage(state, actions, pageModifier)
+            val lockView = state.locked && state.lockMinimal
+            if (lockView) {
+                val stripAlign = if (cameraLeft) Alignment.BottomEnd else Alignment.BottomStart
+                LockScreen(
+                    state = state,
+                    actions = actions,
+                    contentModifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = maxOf(bottom, 56.dp) + 8.dp),
+                    stripModifier = Modifier
+                        .align(stripAlign)
+                        .fillMaxWidth()
+                        .height(maxOf(bottom, 56.dp))
+                        .padding(
+                            start = if (cameraLeft) cameraWidth else edge,
+                            end = if (cameraLeft) edge else cameraWidth,
+                            bottom = DockMetrics.BottomMargin,
+                        ),
+                )
+            } else {
+                HorizontalPager(
+                    state = pager,
+                    modifier = Modifier.fillMaxSize(),
+                    beyondViewportPageCount = 1,
+                    key = { pages[it].name },
+                ) { index ->
+                    val pageModifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = contentBottom)
+                    when (pages[index]) {
+                        CoverPage.HOME -> HomePage(
+                            state = state,
+                            actions = actions,
+                            onOpenNotifications = { goTo(CoverPage.NOTIFICATIONS) },
+                            modifier = pageModifier,
+                        )
+                        CoverPage.NOTIFICATIONS -> NotificationsPage(state, actions, pageModifier)
+                        CoverPage.MEDIA -> MediaPage(state, actions, pageModifier)
+                        CoverPage.APPS -> AppsPage(state, actions, pageModifier)
+                        CoverPage.WIDGETS -> WidgetsPage(state, actions, pageModifier, widget)
+                        CoverPage.TOGGLES -> TogglesPage(state, actions, pageModifier)
+                    }
                 }
             }
 
@@ -195,70 +216,72 @@ fun CoverScreen(
                 )
             }
 
-            // The strip beside the camera block; the dock sits centred in it.
-            if (dockRows.isNotEmpty()) {
-                Box(
-                    Modifier
-                        .align(if (cameraLeft) Alignment.BottomEnd else Alignment.BottomStart)
-                        .fillMaxWidth()
-                        .height(reserved)
-                        .padding(
-                            start = if (cameraLeft) cameraWidth else edge,
-                            end = if (cameraLeft) edge else cameraWidth,
-                            bottom = DockMetrics.BottomMargin,
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(DockMetrics.Gap),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    // A pill steps aside on its own page: the page already shows the same thing.
-                    // targetPage, so it starts leaving while the swipe is still going.
-                    val target = pages.getOrNull(pager.targetPage)
-                    AnimatedVisibility(
-                        visible = dockMedia && target != CoverPage.MEDIA,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically(),
+            if (!lockView) {
+                // The strip beside the camera block; the dock sits centred in it.
+                if (dockRows.isNotEmpty()) {
+                    Box(
+                        Modifier
+                            .align(if (cameraLeft) Alignment.BottomEnd else Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .height(reserved)
+                            .padding(
+                                start = if (cameraLeft) cameraWidth else edge,
+                                end = if (cameraLeft) edge else cameraWidth,
+                                bottom = DockMetrics.BottomMargin,
+                            ),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        DockMedia(
-                            state = state,
-                            actions = actions,
-                            onClick = { if (!goTo(CoverPage.MEDIA)) actions.mediaOpen() },
-                        )
-                    }
-                    AnimatedVisibility(
-                        visible = dockNotifications && target != CoverPage.NOTIFICATIONS,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically(),
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(DockMetrics.Gap),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        DockNotifications(state, onClick = { goTo(CoverPage.NOTIFICATIONS) })
+                        // A pill steps aside on its own page: the page already shows the same thing.
+                        // targetPage, so it starts leaving while the swipe is still going.
+                        val target = pages.getOrNull(pager.targetPage)
+                        AnimatedVisibility(
+                            visible = dockMedia && target != CoverPage.MEDIA,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically(),
+                        ) {
+                            DockMedia(
+                                state = state,
+                                actions = actions,
+                                onClick = { if (!goTo(CoverPage.MEDIA)) actions.mediaOpen() },
+                            )
+                        }
+                        AnimatedVisibility(
+                            visible = dockNotifications && target != CoverPage.NOTIFICATIONS,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically(),
+                        ) {
+                            DockNotifications(state, onClick = { goTo(CoverPage.NOTIFICATIONS) })
+                        }
+                        if (showDots) {
+                            PageDots(
+                                pages = pages.size,
+                                current = pager.currentPage,
+                                onClick = { barShown = !barShown },
+                            )
+                        }
                     }
-                    if (showDots) {
-                        PageDots(
-                            pages = pages.size,
-                            current = pager.currentPage,
-                            onClick = { barShown = !barShown },
-                        )
                     }
                 }
-                }
-            }
 
-            AnimatedVisibility(
-                visible = barVisible,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = reserved + 12.dp),
-                enter = fadeIn() + scaleIn(initialScale = 0.85f) + slideInVertically { it / 2 },
-                exit = fadeOut() + scaleOut(targetScale = 0.85f) + slideOutVertically { it / 2 },
-            ) {
-                PageBar(
-                    pages = pages,
-                    current = pager.currentPage,
-                    notificationCount = state.notifications.size,
-                    onSelect = { scope.launch { pager.animateScrollToPage(it) } },
-                )
+                AnimatedVisibility(
+                    visible = barVisible,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = reserved + 12.dp),
+                    enter = fadeIn() + scaleIn(initialScale = 0.85f) + slideInVertically { it / 2 },
+                    exit = fadeOut() + scaleOut(targetScale = 0.85f) + slideOutVertically { it / 2 },
+                ) {
+                    PageBar(
+                        pages = pages,
+                        current = pager.currentPage,
+                        notificationCount = state.notifications.size,
+                        onSelect = { scope.launch { pager.animateScrollToPage(it) } },
+                    )
+                }
             }
         }
     }

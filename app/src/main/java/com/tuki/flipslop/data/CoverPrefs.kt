@@ -60,6 +60,8 @@ data class CoverSettings(
     val artBlurDp: Int = 32,
     /** System status bar on the cover (the navigation bar always stays hidden). */
     val showStatusBar: Boolean = true,
+    /** While locked: only the clock and music; tap or swipe up to unlock. */
+    val lockMinimal: Boolean = true,
     val cameraSide: CameraSide = DeviceProfile.current.coverCameraSide,
     val cameraWidthDp: Int = DeviceProfile.current.coverCameraWidthDp,
     /** Page bar stays out; otherwise it hides behind page dots until tapped. */
@@ -95,6 +97,7 @@ class CoverPrefs(context: Context) {
             wallpaperBlurDp = p[WALLPAPER_BLUR] ?: 0,
             artBlurDp = p[ART_BLUR] ?: 32,
             showStatusBar = p[SHOW_STATUS_BAR] ?: true,
+            lockMinimal = p[LOCK_MINIMAL] ?: true,
             cameraSide = p[CAMERA_SIDE]?.let { runCatching { CameraSide.valueOf(it) }.getOrNull() }
                 ?: DeviceProfile.current.coverCameraSide,
             cameraWidthDp = p[CAMERA_WIDTH] ?: DeviceProfile.current.coverCameraWidthDp,
@@ -131,6 +134,7 @@ class CoverPrefs(context: Context) {
     suspend fun setWallpaperBlur(dp: Int) = store.edit { it[WALLPAPER_BLUR] = dp.coerceIn(0, MAX_BLUR_DP) }
     suspend fun setArtBlur(dp: Int) = store.edit { it[ART_BLUR] = dp.coerceIn(0, MAX_BLUR_DP) }
     suspend fun setShowStatusBar(value: Boolean) = store.edit { it[SHOW_STATUS_BAR] = value }
+    suspend fun setLockMinimal(value: Boolean) = store.edit { it[LOCK_MINIMAL] = value }
     suspend fun setCameraSide(side: CameraSide) = store.edit { it[CAMERA_SIDE] = side.name }
     suspend fun setCameraWidth(dp: Int) = store.edit { it[CAMERA_WIDTH] = dp.coerceIn(0, MAX_CAMERA_WIDTH_DP) }
     suspend fun setPageBarAlways(value: Boolean) = store.edit { it[PAGE_BAR_ALWAYS] = value }
@@ -201,6 +205,7 @@ class CoverPrefs(context: Context) {
         private val WALLPAPER_BLUR = intPreferencesKey("wallpaper_blur_dp")
         private val ART_BLUR = intPreferencesKey("art_blur_dp")
         private val SHOW_STATUS_BAR = booleanPreferencesKey("show_status_bar")
+        private val LOCK_MINIMAL = booleanPreferencesKey("lock_minimal")
         private val CAMERA_SIDE = stringPreferencesKey("camera_side")
         private val CAMERA_WIDTH = intPreferencesKey("camera_width_dp")
         private val PAGE_BAR_ALWAYS = booleanPreferencesKey("page_bar_always")

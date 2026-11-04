@@ -230,7 +230,7 @@ private fun ExpressiveClock(state: CoverUiState, scale: Float) {
 }
 
 @Composable
-private fun Digits(value: String, style: androidx.compose.ui.text.TextStyle, color: androidx.compose.ui.graphics.Color) {
+internal fun Digits(value: String, style: androidx.compose.ui.text.TextStyle, color: androidx.compose.ui.graphics.Color) {
     AnimatedContent(
         targetState = value,
         transitionSpec = {

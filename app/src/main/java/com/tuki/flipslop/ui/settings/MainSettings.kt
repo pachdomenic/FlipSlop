@@ -23,6 +23,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Notifications
@@ -121,6 +122,9 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                 },
                 switchRow(Icons.Rounded.NotificationsActive, R.string.pref_show_on_wake, R.string.pref_show_on_wake_desc, settings.showOnWake) {
                     scope.launch { prefs.setShowOnWake(it) }
+                },
+                switchRow(Icons.Rounded.Lock, R.string.pref_lock_minimal, R.string.pref_lock_minimal_desc, settings.lockMinimal) {
+                    scope.launch { prefs.setLockMinimal(it) }
                 },
                 switchRow(
                     Icons.Rounded.Home,

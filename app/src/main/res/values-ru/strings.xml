@@ -99,6 +99,9 @@
     <string name="pref_auto_show_desc">Открывать лаунчер обложки каждый раз, когда телефон закрыт</string>
     <string name="pref_show_on_wake">Показывать при включении экрана</string>
     <string name="pref_show_on_wake_desc">Кнопка питания на закрытом телефоне открывает лаунчер обложки</string>
+    <string name="lock_hint">Нажмите или проведите вверх, чтобы разблокировать</string>
+    <string name="pref_lock_minimal">Простой экран блокировки</string>
+    <string name="pref_lock_minimal_desc">Пока телефон заблокирован, на обложке только часы и музыка; нажмите или проведите вверх, чтобы разблокировать</string>
     <string name="pref_return_home">«Домой» возвращает на обложку</string>
     <string name="pref_return_home_desc">Кнопка «Домой» на обложке ведёт в FlipSlop, а не в обычный лаунчер</string>
     <string name="pref_return_home_needs_usage">Нужен доступ к истории использования</string>

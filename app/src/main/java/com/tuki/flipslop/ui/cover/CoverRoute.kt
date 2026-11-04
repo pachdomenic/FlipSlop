@@ -68,6 +68,7 @@ fun rememberCoverUiState(
         is24h = DateFormat.is24HourFormat(context),
         battery = battery,
         locked = locked,
+        lockMinimal = settings.lockMinimal,
         notifications = notifications,
         notificationAccess = connected,
         media = media,

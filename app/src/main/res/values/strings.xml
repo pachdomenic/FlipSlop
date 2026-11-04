@@ -101,6 +101,9 @@
     <string name="pref_auto_show_desc">Open the cover launcher every time you close the phone</string>
     <string name="pref_show_on_wake">Show when the cover wakes</string>
     <string name="pref_show_on_wake_desc">Pressing power while folded opens the cover launcher</string>
+    <string name="lock_hint">Tap or swipe up to unlock</string>
+    <string name="pref_lock_minimal">Simple lock screen</string>
+    <string name="pref_lock_minimal_desc">While locked the cover shows only the clock and music; tap or swipe up to unlock</string>
     <string name="pref_return_home">Home returns to the cover</string>
     <string name="pref_return_home_desc">Home on the cover goes back to FlipSlop instead of the regular launcher</string>
     <string name="pref_return_home_needs_usage">Needs usage access</string>

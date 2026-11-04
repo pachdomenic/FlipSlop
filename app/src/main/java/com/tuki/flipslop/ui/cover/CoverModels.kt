@@ -30,6 +30,8 @@ data class CoverUiState(
     val is24h: Boolean = true,
     val battery: BatteryInfo? = null,
     val locked: Boolean = false,
+    /** Show the simple lock screen while [locked]. */
+    val lockMinimal: Boolean = true,
     val notifications: List<CoverNotification> = emptyList(),
     val notificationAccess: Boolean = false,
     val media: MediaState? = null,
@@ -88,6 +90,9 @@ interface CoverActions {
     fun openPanel(action: String) {}
 
     fun openSettings() {}
+
+    /** Bring up the bouncer; the full cover shows once unlocked. */
+    fun unlock() {}
 }
 
 object NoopCoverActions : CoverActions

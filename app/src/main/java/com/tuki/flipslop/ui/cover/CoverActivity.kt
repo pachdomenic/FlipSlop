@@ -1,7 +1,10 @@
 package com.tuki.flipslop.ui.cover
 
 import android.app.KeyguardManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.provider.Settings
 import android.view.RoundedCorner
@@ -151,8 +154,36 @@ class CoverActivity : ComponentActivity() {
         edgePadding = cornerPaddingDp()
     }
 
+    /** The keyguard comes and goes while we stay on screen; keep [locked] in step. */
+    private val keyguardReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_USER_PRESENT -> locked = false
+                else -> {
+                    refreshLocked()
+                    // The keyguard may engage a moment after the screen goes off.
+                    window.decorView.postDelayed(::refreshLocked, KEYGUARD_SETTLE_MS)
+                }
+            }
+        }
+    }
+
+    private fun refreshLocked() {
+        locked = getSystemService(KeyguardManager::class.java).isKeyguardLocked
+    }
+
     override fun onStart() {
         super.onStart()
+        registerReceiver(
+            keyguardReceiver,
+            IntentFilter().apply {
+                addAction(Intent.ACTION_USER_PRESENT)
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_SCREEN_OFF)
+            },
+            RECEIVER_NOT_EXPORTED,
+        )
+        refreshLocked()
         runtime.widgets.startListening()
         runtime.toggles.start()
     }
@@ -161,7 +192,7 @@ class CoverActivity : ComponentActivity() {
         super.onResume()
         runtime.coverVisible.value = true
         runtime.launcher.cancelFallback()
-        locked = getSystemService(KeyguardManager::class.java).isKeyguardLocked
+        refreshLocked()
         runtime.refreshCapabilities()
         runtime.toggles.refresh()
     }
@@ -172,6 +203,7 @@ class CoverActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        runCatching { unregisterReceiver(keyguardReceiver) }
         runtime.toggles.stop()
         runtime.widgets.stopListening()
         super.onStop()
@@ -309,11 +341,14 @@ class CoverActivity : ComponentActivity() {
         override fun openPanel(action: String) = unlocked { startOnCover(Intent(action)) }
 
         override fun openSettings() = unlocked { startOnCover(Intent(this@CoverActivity, SettingsActivity::class.java)) }
+
+        override fun unlock() = unlocked { }
     }
 
     companion object {
         const val EXTRA_REASON = "com.tuki.flipslop.extra.REASON"
         const val EXTRA_STAY = "com.tuki.flipslop.extra.STAY"
+        private const val KEYGUARD_SETTLE_MS = 1_000L
     }
 }
 
