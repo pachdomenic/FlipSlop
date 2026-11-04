@@ -2,10 +2,12 @@ package com.tuki.flipslop.ui.cover
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
@@ -96,6 +98,7 @@ fun CoverScreen(
     }
 
     // Height of the dock column; the pager keeps clear of it and of the camera block.
+    // Counted with every pill, even one hidden on its own page, so pages don't jump.
     val showDots = !dock.pageBarAlways && dock.showPageDots
     val dockRows = listOfNotNull(
         DockMetrics.MediaHeight.takeIf { dockMedia },
@@ -210,14 +213,25 @@ fun CoverScreen(
                     verticalArrangement = Arrangement.spacedBy(DockMetrics.Gap),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    if (dockMedia) {
+                    // A pill steps aside on its own page: the page already shows the same thing.
+                    // targetPage, so it starts leaving while the swipe is still going.
+                    val target = pages.getOrNull(pager.targetPage)
+                    AnimatedVisibility(
+                        visible = dockMedia && target != CoverPage.MEDIA,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically(),
+                    ) {
                         DockMedia(
                             state = state,
                             actions = actions,
                             onClick = { if (!goTo(CoverPage.MEDIA)) actions.mediaOpen() },
                         )
                     }
-                    if (dockNotifications) {
+                    AnimatedVisibility(
+                        visible = dockNotifications && target != CoverPage.NOTIFICATIONS,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically(),
+                    ) {
                         DockNotifications(state, onClick = { goTo(CoverPage.NOTIFICATIONS) })
                     }
                     if (showDots) {
