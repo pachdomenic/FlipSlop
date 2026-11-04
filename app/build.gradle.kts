@@ -73,6 +73,8 @@ android {
         disable += "ProtectedPermissions"
         // LineageOS 23 is Android 16 (API 36); compileSdk 37 is only for Material 3 Expressive.
         disable += "OldTargetApi"
+        // Versions are pinned to prebuilts/sdk of LineageOS 23 on purpose (see libs.versions.toml).
+        disable += "GradleDependency"
     }
 }
 
