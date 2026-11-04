@@ -24,6 +24,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -33,7 +34,20 @@ import androidx.compose.ui.unit.dp
 import com.tuki.flipslop.R
 import com.tuki.flipslop.service.CoverRuntime
 
-enum class Route { MAIN, PAGES, APPS, WIDGETS }
+enum class Route {
+    MAIN,
+
+    // Categories on the main screen
+    ACCESS, BEHAVIOUR, LOCK, COVER, STYLE, CAMERA, DIAGNOSTICS,
+
+    // Under "Cover"
+    PAGES, APPS, WIDGETS,
+}
+
+private val RouteStackSaver = listSaver<List<Route>, String>(
+    save = { stack -> stack.map { it.name } },
+    restore = { names -> names.map(Route::valueOf) },
+)
 
 @Composable
 fun SettingsApp(runtime: CoverRuntime, initialRoute: String?, host: SettingsHost) {
@@ -43,25 +57,29 @@ fun SettingsApp(runtime: CoverRuntime, initialRoute: String?, host: SettingsHost
         SettingsActivity.ROUTE_PAGES -> Route.PAGES
         else -> Route.MAIN
     }
-    var route by rememberSaveable { mutableStateOf(start) }
-    // Deep links (from the cover) close the activity on back; normal navigation goes up.
-    val back: () -> Unit = { if (route == Route.MAIN || route == start) host.finish() else route = Route.MAIN }
-    BackHandler(enabled = route != Route.MAIN, onBack = back)
+    // A back stack: Cover > Pages goes back to Cover, not to the main screen.
+    // Deep links (from the cover) start on their screen and close on back.
+    var stack by rememberSaveable(stateSaver = RouteStackSaver) { mutableStateOf(listOf(start)) }
+    val navigate: (Route) -> Unit = { stack = stack + it }
+    val back: () -> Unit = { if (stack.size > 1) stack = stack.dropLast(1) else host.finish() }
+    BackHandler(enabled = stack.size > 1, onBack = back)
 
     AnimatedContent(
-        targetState = route,
+        targetState = stack,
+        contentKey = { it.last() },
         transitionSpec = {
-            val forward = targetState.ordinal > initialState.ordinal
+            val forward = targetState.size >= initialState.size
             (slideInHorizontally { if (forward) it / 4 else -it / 4 } + fadeIn()) togetherWith
                 (slideOutHorizontally { if (forward) -it / 4 else it / 4 } + fadeOut())
         },
         label = "route",
     ) { current ->
-        when (current) {
-            Route.MAIN -> MainSettings(runtime, host, navigate = { route = it })
+        when (val route = current.last()) {
+            Route.MAIN -> MainSettings(runtime, host, navigate)
             Route.PAGES -> PagesSettings(runtime, onBack = back)
             Route.APPS -> AppsSettings(runtime, onBack = back)
             Route.WIDGETS -> WidgetsSettings(runtime, host, onBack = back)
+            else -> CategorySettings(route, runtime, host, navigate, onBack = back)
         }
     }
 }

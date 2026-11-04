@@ -86,6 +86,14 @@
     <string name="open_cover_now">Открыть лаунчер обложки</string>
     <string name="hint_cannot_auto_show">Пока обложка не будет открываться сама. Разрешите «Поверх других приложений» или «Полноэкранные уведомления» ниже.</string>
 
+    <string name="section_lock">Экран блокировки</string>
+    <string name="cat_access_desc">Разрешено %1$d из %2$d</string>
+    <string name="cat_behaviour_desc">Когда появляется лаунчер обложки</string>
+    <string name="cat_lock_desc">Часы, музыка и уведомления на блокировке</string>
+    <string name="cat_cover_desc">Страницы, приложения, виджеты, вид главного экрана и уведомлений</string>
+    <string name="cat_style_desc">Значки, часы, обложка трека, размытие</string>
+    <string name="cat_camera_desc">Док, панель страниц и блок камер</string>
+    <string name="cat_diagnostics_desc">Положение шарнира, панели, версия</string>
     <string name="section_access">Доступ</string>
     <string name="perm_post">Уведомления</string>
     <string name="perm_post_desc">Статус и запасной способ открыть обложку</string>
@@ -162,6 +170,7 @@
     <string name="themed_icons_off">Выкл</string>
     <string name="themed_icons_on">Вкл</string>
     <string name="themed_icons_system">Как в системе</string>
+    <string name="themed_icons_system_short">Система</string>
     <string name="themed_icons_system_on">«Обои и стиль»: тематические значки включены</string>
     <string name="themed_icons_system_off">«Обои и стиль»: тематические значки выключены</string>
     <string name="themed_icons_system_unavailable">Этот переключатель видит только системная установка FlipSlop, поэтому пока значки обычные</string>

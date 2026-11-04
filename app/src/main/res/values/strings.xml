@@ -86,6 +86,14 @@
     <string name="open_cover_now">Open cover launcher</string>
     <string name="hint_cannot_auto_show">The cover will not open on its own yet. Allow \"Display over other apps\" or \"Full screen notifications\" below.</string>
 
+    <string name="section_lock">Lock screen</string>
+    <string name="cat_access_desc">%1$d of %2$d allowed</string>
+    <string name="cat_behaviour_desc">When the cover launcher shows up</string>
+    <string name="cat_lock_desc">Clock, music and notifications while locked</string>
+    <string name="cat_cover_desc">Pages, apps, widgets, Home and notifications layout</string>
+    <string name="cat_style_desc">Icons, clock, album art, blur</string>
+    <string name="cat_camera_desc">Dock, page bar and the camera block</string>
+    <string name="cat_diagnostics_desc">Fold state, panels, version</string>
     <string name="section_access">Access</string>
     <string name="perm_post">Notifications</string>
     <string name="perm_post_desc">Status and fallback notifications</string>
@@ -160,6 +168,7 @@
     <string name="themed_icons_off">Off</string>
     <string name="themed_icons_on">On</string>
     <string name="themed_icons_system">Like the system</string>
+    <string name="themed_icons_system_short">System</string>
     <string name="themed_icons_system_on">Wallpaper &amp; style: themed icons are on</string>
     <string name="themed_icons_system_off">Wallpaper &amp; style: themed icons are off</string>
     <string name="themed_icons_system_unavailable">Only a system install of FlipSlop can read this switch, so icons stay unthemed for now</string>

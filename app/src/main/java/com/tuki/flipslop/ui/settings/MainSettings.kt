@@ -22,6 +22,7 @@ import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MoreHoriz
@@ -32,7 +33,9 @@ import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.PhonelinkSetup
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.QueryStats
+import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.SignalCellularAlt
+import androidx.compose.material.icons.rounded.Smartphone
 import androidx.compose.material.icons.rounded.ViewCarousel
 import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material3.Button
@@ -92,249 +95,312 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) -> Unit) {
     val caps by runtime.capabilities.collectAsStateWithLifecycle()
-    val settings by runtime.settings.collectAsStateWithLifecycle()
     val fold by runtime.fold.snapshot.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
-    val prefs = runtime.prefs
-    val titleAccess = stringResource(R.string.section_access)
-    val titleBehaviour = stringResource(R.string.section_behaviour)
-    val titleCover = stringResource(R.string.section_cover)
-    val titleDiagnostics = stringResource(R.string.section_diagnostics)
-    val titleCamera = stringResource(R.string.section_camera)
-    val titleStyle = stringResource(R.string.section_style)
+    val (granted, total) = permissionCount(caps)
 
     SettingsScaffold(
         title = stringResource(R.string.app_name),
         subtitle = stringResource(caps.tier.labelRes),
     ) {
         item(key = "hero") { Hero(runtime, caps, fold, host) }
-
-        segmentedGroup(
-            title = titleAccess,
-            key = "access",
-            rows = permissionRows(caps, host),
-        )
-
-        segmentedGroup(
-            title = titleBehaviour,
-            key = "behaviour",
-            rows = listOf(
-                switchRow(Icons.Rounded.PhonelinkSetup, R.string.pref_auto_show, R.string.pref_auto_show_desc, settings.autoShowOnFold) {
-                    scope.launch { prefs.setAutoShowOnFold(it) }
-                },
-                switchRow(Icons.Rounded.NotificationsActive, R.string.pref_show_on_wake, R.string.pref_show_on_wake_desc, settings.showOnWake) {
-                    scope.launch { prefs.setShowOnWake(it) }
-                },
-                switchRow(Icons.Rounded.Lock, R.string.pref_lock_minimal, R.string.pref_lock_minimal_desc, settings.lockMinimal) {
-                    scope.launch { prefs.setLockMinimal(it) }
-                },
-                switchRow(
-                    Icons.Rounded.Notifications,
-                    R.string.pref_lock_notifications,
-                    R.string.pref_lock_notifications_desc,
-                    settings.lockNotifications,
-                    enabled = settings.lockMinimal,
-                ) { scope.launch { prefs.setLockNotifications(it) } },
-                switchRow(
-                    Icons.Rounded.Home,
-                    R.string.pref_return_home,
-                    if (caps.usageAccess) R.string.pref_return_home_desc else R.string.pref_return_home_needs_usage,
-                    settings.returnAfterHome,
-                    enabled = caps.usageAccess,
-                ) { scope.launch { prefs.setReturnAfterHome(it) } },
-            ),
-        )
-
-        segmentedGroup(
-            title = titleCover,
-            key = "cover",
-            rows = listOf(
-                navRow(Icons.Rounded.ViewCarousel, R.string.pref_pages, R.string.pref_pages_desc) { navigate(Route.PAGES) },
-                navRow(Icons.Rounded.Apps, R.string.pref_apps, R.string.pref_apps_desc) { navigate(Route.APPS) },
-                navRow(Icons.Rounded.Widgets, R.string.pref_widgets, R.string.pref_widgets_desc) { navigate(Route.WIDGETS) },
-                switchRow(Icons.Rounded.SignalCellularAlt, R.string.pref_status_bar, R.string.pref_status_bar_desc, settings.showStatusBar) {
-                    scope.launch { prefs.setShowStatusBar(it) }
-                },
-            ),
-        )
-
-        segmentedGroup(
-            title = titleStyle,
-            key = "style",
-            rows = listOf(
-                { shapes ->
-                    ChoiceRow(
-                        title = R.string.pref_icon_shape,
-                        icon = Icons.Rounded.Category,
-                        options = IconShapeStyle.entries,
-                        selected = settings.iconShape,
-                        label = { stringResource(it.labelRes) },
-                        shapes = shapes,
-                        content = { style ->
-                            Box(
-                                Modifier
-                                    .size(22.dp)
-                                    .clip(rememberIconShape(0, style))
-                                    .background(LocalContentColor.current),
-                            )
-                        },
-                    ) { s -> scope.launch { prefs.setIconShape(s) } }
-                },
-                { shapes ->
-                    val systemThemed by runtime.iconTheme.themed.collectAsStateWithLifecycle()
-                    ChoiceRow(
-                        title = R.string.pref_themed_icons,
-                        icon = Icons.Rounded.Palette,
-                        options = ThemedIcons.entries,
-                        selected = settings.themedIcons,
-                        label = { stringResource(it.labelRes) },
-                        shapes = shapes,
-                        footer = when {
-                            settings.themedIcons != ThemedIcons.SYSTEM -> null
-                            !caps.systemIconTheme -> stringResource(R.string.themed_icons_system_unavailable)
-                            systemThemed -> stringResource(R.string.themed_icons_system_on)
-                            else -> stringResource(R.string.themed_icons_system_off)
-                        },
-                    ) { m -> scope.launch { prefs.setThemedIcons(m) } }
-                },
-                { shapes ->
-                    ChoiceRow(
-                        title = R.string.pref_home_style,
-                        icon = Icons.Rounded.Home,
-                        options = HomeStyle.entries,
-                        selected = settings.homeStyle,
-                        label = { stringResource(if (it == HomeStyle.CARDS) R.string.home_style_cards else R.string.home_style_dock) },
-                        shapes = shapes,
-                    ) { s -> scope.launch { prefs.setHomeStyle(s) } }
-                },
-                { shapes ->
-                    ChoiceRow(
-                        title = R.string.pref_notification_style,
-                        icon = Icons.Rounded.Notifications,
-                        options = NotificationStyle.entries,
-                        selected = settings.notificationStyle,
-                        label = {
-                            stringResource(
-                                if (it == NotificationStyle.COMPACT) R.string.notification_style_compact
-                                else R.string.notification_style_detailed,
-                            )
-                        },
-                        shapes = shapes,
-                    ) { s -> scope.launch { prefs.setNotificationStyle(s) } }
-                },
-                { shapes -> ClockStyleRow(settings.clockStyle, shapes) { s -> scope.launch { prefs.setClockStyle(s) } } },
-                switchRow(Icons.Rounded.AccessTime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, settings.idleAospClock) {
-                    scope.launch { prefs.setIdleAospClock(it) }
-                },
-                switchRow(Icons.Rounded.Album, R.string.pref_media_art, R.string.pref_media_art_desc, settings.mediaArtBackground) {
-                    scope.launch { prefs.setMediaArtBackground(it) }
-                },
-                { shapes ->
-                    SliderRow(
-                        value = settings.artBlurDp,
-                        max = CoverPrefs.MAX_BLUR_DP,
-                        title = R.string.pref_art_blur,
-                        desc = R.string.pref_art_blur_desc,
-                        shapes = shapes,
-                    ) { v -> scope.launch { prefs.setArtBlur(v) } }
-                },
-                { shapes ->
-                    val context = LocalContext.current
-                    val blurSupported = remember {
-                        context.getSystemService(WindowManager::class.java).isCrossWindowBlurEnabled
-                    }
-                    SliderRow(
-                        value = settings.wallpaperBlurDp,
-                        max = CoverPrefs.MAX_BLUR_DP,
-                        title = R.string.pref_wallpaper_blur,
-                        desc = if (blurSupported) R.string.pref_wallpaper_blur_desc else R.string.pref_wallpaper_blur_unsupported,
-                        shapes = shapes,
-                    ) { v -> scope.launch { prefs.setWallpaperBlur(v) } }
-                },
-            ),
-        )
-
-        segmentedGroup(
-            title = titleCamera,
-            key = "camera",
-            rows = listOf(
-                switchRow(Icons.Rounded.ViewCarousel, R.string.pref_page_bar_always, R.string.pref_page_bar_always_desc, settings.pageBarAlways) {
-                    scope.launch { prefs.setPageBarAlways(it) }
-                },
-                switchRow(
-                    Icons.Rounded.MoreHoriz,
-                    R.string.pref_page_dots,
-                    R.string.pref_page_dots_desc,
-                    settings.showPageDots && !settings.pageBarAlways,
-                    enabled = !settings.pageBarAlways,
-                ) { scope.launch { prefs.setShowPageDots(it) } },
-                switchRow(Icons.Rounded.Notifications, R.string.pref_dock_notifications, R.string.pref_dock_notifications_desc, settings.dockNotifications) {
-                    scope.launch { prefs.setDockNotifications(it) }
-                },
-                switchRow(Icons.Rounded.MusicNote, R.string.pref_dock_media, R.string.pref_dock_media_desc, settings.dockMedia) {
-                    scope.launch { prefs.setDockMedia(it) }
-                },
-                { shapes -> CameraSideRow(settings.cameraSide, shapes) { s -> scope.launch { prefs.setCameraSide(s) } } },
-                { shapes ->
-                    SliderRow(
-                        value = settings.cameraWidthDp,
-                        max = CoverPrefs.MAX_CAMERA_WIDTH_DP,
-                        title = R.string.pref_camera_width,
-                        desc = R.string.pref_camera_width_desc,
-                        shapes = shapes,
-                    ) { v -> scope.launch { prefs.setCameraWidth(v) } }
-                },
-                { shapes ->
-                    SliderRow(
-                        value = settings.bottomInsetDp,
-                        max = CoverPrefs.MAX_INSET_DP,
-                        title = R.string.pref_inset,
-                        desc = R.string.pref_inset_desc,
-                        shapes = shapes,
-                    ) { v -> scope.launch { prefs.setBottomInset(v) } }
-                },
-            ),
-        )
-
-        segmentedGroup(
-            title = titleDiagnostics,
-            key = "diagnostics",
-            rows = diagnosticsRows(runtime, fold, caps),
-        )
-
         segmentedGroup(
             title = null,
-            key = "about",
-            rows = listOf(
-                { shapes ->
-                    ListItem(
-                        onClick = {},
-                        shapes = shapes,
-                        supportingContent = { Text(stringResource(R.string.about_text)) },
-                    ) { Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME)) }
-                },
+            key = "categories",
+            rows = rows(
+                categoryRow(Route.ACCESS, Icons.Rounded.Security, summary = { stringResource(R.string.cat_access_desc, granted, total) }, navigate),
+                categoryRow(Route.BEHAVIOUR, Icons.Rounded.PhonelinkSetup, R.string.cat_behaviour_desc, navigate),
+                categoryRow(Route.LOCK, Icons.Rounded.Lock, R.string.cat_lock_desc, navigate),
+                categoryRow(Route.COVER, Icons.Rounded.Smartphone, R.string.cat_cover_desc, navigate),
+                categoryRow(Route.STYLE, Icons.Rounded.Palette, R.string.cat_style_desc, navigate),
+                categoryRow(Route.CAMERA, Icons.Rounded.PhotoCamera, R.string.cat_camera_desc, navigate),
+                categoryRow(Route.DIAGNOSTICS, Icons.Rounded.Info, R.string.cat_diagnostics_desc, navigate),
             ),
+        )
+    }
+}
+
+/** One settings category: its own screen with one group of rows. */
+@Composable
+fun CategorySettings(
+    route: Route,
+    runtime: CoverRuntime,
+    host: SettingsHost,
+    navigate: (Route) -> Unit,
+    onBack: () -> Unit,
+) {
+    val caps by runtime.capabilities.collectAsStateWithLifecycle()
+    val settings by runtime.settings.collectAsStateWithLifecycle()
+    val fold by runtime.fold.snapshot.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val prefs = runtime.prefs
+
+    val content: List<@Composable (ListItemShapes) -> Unit> = when (route) {
+        Route.ACCESS -> permissionRows(caps, host)
+
+        Route.BEHAVIOUR -> rows(
+            switchRow(Icons.Rounded.PhonelinkSetup, R.string.pref_auto_show, R.string.pref_auto_show_desc, settings.autoShowOnFold) {
+                scope.launch { prefs.setAutoShowOnFold(it) }
+            },
+            switchRow(Icons.Rounded.NotificationsActive, R.string.pref_show_on_wake, R.string.pref_show_on_wake_desc, settings.showOnWake) {
+                scope.launch { prefs.setShowOnWake(it) }
+            },
+            switchRow(
+                Icons.Rounded.Home,
+                R.string.pref_return_home,
+                if (caps.usageAccess) R.string.pref_return_home_desc else R.string.pref_return_home_needs_usage,
+                settings.returnAfterHome,
+                enabled = caps.usageAccess,
+            ) { scope.launch { prefs.setReturnAfterHome(it) } },
+        )
+
+        Route.LOCK -> rows(
+            switchRow(Icons.Rounded.Lock, R.string.pref_lock_minimal, R.string.pref_lock_minimal_desc, settings.lockMinimal) {
+                scope.launch { prefs.setLockMinimal(it) }
+            },
+            switchRow(
+                Icons.Rounded.Notifications,
+                R.string.pref_lock_notifications,
+                R.string.pref_lock_notifications_desc,
+                settings.lockNotifications,
+                enabled = settings.lockMinimal,
+            ) { scope.launch { prefs.setLockNotifications(it) } },
+        )
+
+        Route.COVER -> rows(
+            navRow(Icons.Rounded.ViewCarousel, R.string.pref_pages, R.string.pref_pages_desc) { navigate(Route.PAGES) },
+            navRow(Icons.Rounded.Apps, R.string.pref_apps, R.string.pref_apps_desc) { navigate(Route.APPS) },
+            navRow(Icons.Rounded.Widgets, R.string.pref_widgets, R.string.pref_widgets_desc) { navigate(Route.WIDGETS) },
+            { shapes ->
+                ChoiceRow(
+                    title = R.string.pref_home_style,
+                    icon = Icons.Rounded.Home,
+                    options = HomeStyle.entries,
+                    selected = settings.homeStyle,
+                    label = { stringResource(if (it == HomeStyle.CARDS) R.string.home_style_cards else R.string.home_style_dock) },
+                    shapes = shapes,
+                ) { s -> scope.launch { prefs.setHomeStyle(s) } }
+            },
+            { shapes ->
+                ChoiceRow(
+                    title = R.string.pref_notification_style,
+                    icon = Icons.Rounded.Notifications,
+                    options = NotificationStyle.entries,
+                    selected = settings.notificationStyle,
+                    label = {
+                        stringResource(
+                            if (it == NotificationStyle.COMPACT) R.string.notification_style_compact
+                            else R.string.notification_style_detailed,
+                        )
+                    },
+                    shapes = shapes,
+                ) { s -> scope.launch { prefs.setNotificationStyle(s) } }
+            },
+            switchRow(Icons.Rounded.SignalCellularAlt, R.string.pref_status_bar, R.string.pref_status_bar_desc, settings.showStatusBar) {
+                scope.launch { prefs.setShowStatusBar(it) }
+            },
+        )
+
+        Route.STYLE -> rows(
+            { shapes ->
+                ChoiceRow(
+                    title = R.string.pref_icon_shape,
+                    icon = Icons.Rounded.Category,
+                    options = IconShapeStyle.entries,
+                    selected = settings.iconShape,
+                    label = { stringResource(it.labelRes) },
+                    shapes = shapes,
+                    content = { style ->
+                        Box(
+                            Modifier
+                                .size(22.dp)
+                                .clip(rememberIconShape(0, style))
+                                .background(LocalContentColor.current),
+                        )
+                    },
+                ) { s -> scope.launch { prefs.setIconShape(s) } }
+            },
+            { shapes ->
+                val systemThemed by runtime.iconTheme.themed.collectAsStateWithLifecycle()
+                ChoiceRow(
+                    title = R.string.pref_themed_icons,
+                    icon = Icons.Rounded.Palette,
+                    options = ThemedIcons.entries,
+                    selected = settings.themedIcons,
+                    label = { stringResource(it.labelRes) },
+                    shapes = shapes,
+                    // Three buttons in a row: short labels, the full one sits in the title row.
+                    content = { Text(stringResource(if (it == ThemedIcons.SYSTEM) R.string.themed_icons_system_short else it.labelRes), maxLines = 1) },
+                    footer = when {
+                        settings.themedIcons != ThemedIcons.SYSTEM -> null
+                        !caps.systemIconTheme -> stringResource(R.string.themed_icons_system_unavailable)
+                        systemThemed -> stringResource(R.string.themed_icons_system_on)
+                        else -> stringResource(R.string.themed_icons_system_off)
+                    },
+                ) { m -> scope.launch { prefs.setThemedIcons(m) } }
+            },
+            { shapes -> ClockStyleRow(settings.clockStyle, shapes) { s -> scope.launch { prefs.setClockStyle(s) } } },
+            switchRow(Icons.Rounded.AccessTime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, settings.idleAospClock) {
+                scope.launch { prefs.setIdleAospClock(it) }
+            },
+            switchRow(Icons.Rounded.Album, R.string.pref_media_art, R.string.pref_media_art_desc, settings.mediaArtBackground) {
+                scope.launch { prefs.setMediaArtBackground(it) }
+            },
+            { shapes ->
+                SliderRow(
+                    value = settings.artBlurDp,
+                    max = CoverPrefs.MAX_BLUR_DP,
+                    title = R.string.pref_art_blur,
+                    desc = R.string.pref_art_blur_desc,
+                    shapes = shapes,
+                ) { v -> scope.launch { prefs.setArtBlur(v) } }
+            },
+            { shapes ->
+                val context = LocalContext.current
+                val blurSupported = remember {
+                    context.getSystemService(WindowManager::class.java).isCrossWindowBlurEnabled
+                }
+                SliderRow(
+                    value = settings.wallpaperBlurDp,
+                    max = CoverPrefs.MAX_BLUR_DP,
+                    title = R.string.pref_wallpaper_blur,
+                    desc = if (blurSupported) R.string.pref_wallpaper_blur_desc else R.string.pref_wallpaper_blur_unsupported,
+                    shapes = shapes,
+                ) { v -> scope.launch { prefs.setWallpaperBlur(v) } }
+            },
+        )
+
+        Route.CAMERA -> rows(
+            switchRow(Icons.Rounded.ViewCarousel, R.string.pref_page_bar_always, R.string.pref_page_bar_always_desc, settings.pageBarAlways) {
+                scope.launch { prefs.setPageBarAlways(it) }
+            },
+            switchRow(
+                Icons.Rounded.MoreHoriz,
+                R.string.pref_page_dots,
+                R.string.pref_page_dots_desc,
+                settings.showPageDots && !settings.pageBarAlways,
+                enabled = !settings.pageBarAlways,
+            ) { scope.launch { prefs.setShowPageDots(it) } },
+            switchRow(Icons.Rounded.Notifications, R.string.pref_dock_notifications, R.string.pref_dock_notifications_desc, settings.dockNotifications) {
+                scope.launch { prefs.setDockNotifications(it) }
+            },
+            switchRow(Icons.Rounded.MusicNote, R.string.pref_dock_media, R.string.pref_dock_media_desc, settings.dockMedia) {
+                scope.launch { prefs.setDockMedia(it) }
+            },
+            { shapes -> CameraSideRow(settings.cameraSide, shapes) { s -> scope.launch { prefs.setCameraSide(s) } } },
+            { shapes ->
+                SliderRow(
+                    value = settings.cameraWidthDp,
+                    max = CoverPrefs.MAX_CAMERA_WIDTH_DP,
+                    title = R.string.pref_camera_width,
+                    desc = R.string.pref_camera_width_desc,
+                    shapes = shapes,
+                ) { v -> scope.launch { prefs.setCameraWidth(v) } }
+            },
+            { shapes ->
+                SliderRow(
+                    value = settings.bottomInsetDp,
+                    max = CoverPrefs.MAX_INSET_DP,
+                    title = R.string.pref_inset,
+                    desc = R.string.pref_inset_desc,
+                    shapes = shapes,
+                ) { v -> scope.launch { prefs.setBottomInset(v) } }
+            },
+        )
+
+        Route.DIAGNOSTICS -> diagnosticsRows(runtime, fold, caps) + rows(
+            { shapes ->
+                ListItem(
+                    onClick = {},
+                    shapes = shapes,
+                    supportingContent = { Text(stringResource(R.string.about_text)) },
+                ) { Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME)) }
+            },
+        )
+
+        else -> emptyList()
+    }
+
+    SettingsScaffold(title = stringResource(route.titleRes), onBack = onBack) {
+        // The camera screen shows the cover preview, so the sliders have something to move.
+        if (route == Route.CAMERA || route == Route.STYLE) {
+            item(key = "preview") { CoverPreview(runtime) }
+        }
+        segmentedGroup(title = null, key = route.name, rows = content)
+    }
+}
+
+private fun rows(vararg row: @Composable (ListItemShapes) -> Unit): List<@Composable (ListItemShapes) -> Unit> = row.toList()
+
+private fun categoryRow(route: Route, icon: ImageVector, desc: Int, navigate: (Route) -> Unit) =
+    categoryRow(route, icon, summary = { stringResource(desc) }, navigate)
+
+private fun categoryRow(
+    route: Route,
+    icon: ImageVector,
+    summary: @Composable () -> String,
+    navigate: (Route) -> Unit,
+): @Composable (ListItemShapes) -> Unit = { shapes ->
+    ListItem(
+        onClick = { navigate(route) },
+        shapes = shapes,
+        leadingContent = { Icon(icon, contentDescription = null) },
+        supportingContent = { Text(summary()) },
+        trailingContent = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null) },
+    ) { Text(stringResource(route.titleRes)) }
+}
+
+/** How many of the user-grantable accesses are in place (privileged builds count as granted). */
+private fun permissionCount(caps: CapabilityState): Pair<Int, Int> {
+    val priv = caps.tier == Tier.PRIVILEGED
+    val all = listOf(
+        caps.postNotifications,
+        caps.overlay || priv,
+        caps.notificationAccess,
+        caps.fullScreenIntent || priv,
+        caps.usageAccess,
+        caps.writeSettings,
+    )
+    return all.count { it } to all.size
+}
+
+val Route.titleRes: Int
+    get() = when (this) {
+        Route.MAIN -> R.string.app_name
+        Route.ACCESS -> R.string.section_access
+        Route.BEHAVIOUR -> R.string.section_behaviour
+        Route.LOCK -> R.string.section_lock
+        Route.COVER -> R.string.section_cover
+        Route.STYLE -> R.string.section_style
+        Route.CAMERA -> R.string.section_camera
+        Route.DIAGNOSTICS -> R.string.section_diagnostics
+        Route.PAGES -> R.string.pref_pages
+        Route.APPS -> R.string.pref_apps
+        Route.WIDGETS -> R.string.pref_widgets
+    }
+
+/** Live, scaled-down cover with the camera block drawn in. */
+@Composable
+private fun CoverPreview(runtime: CoverRuntime) {
+    val settings by runtime.settings.collectAsStateWithLifecycle()
+    val state = rememberCoverUiState(runtime, locked = false, edgePaddingDp = 16, showCameraGuide = true)
+    CoverPreviewFrame(Modifier.padding(vertical = 8.dp)) {
+        CoverScreen(
+            state = state,
+            actions = NoopCoverActions,
+            // arcfox status_bar_height_portrait; the preview has no real status bar.
+            topInset = if (settings.showStatusBar) 33.dp else 0.dp,
+            widget = { id, modifier -> HostedWidget(runtime, id, modifier) },
         )
     }
 }
 
 @Composable
 private fun Hero(runtime: CoverRuntime, caps: CapabilityState, fold: FoldSnapshot, host: SettingsHost) {
-    val settings by runtime.settings.collectAsStateWithLifecycle()
-    val state = rememberCoverUiState(runtime, locked = false, edgePaddingDp = 16, showCameraGuide = true)
     Column(
         Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CoverPreviewFrame {
-            CoverScreen(
-                state = state,
-                actions = NoopCoverActions,
-                // arcfox status_bar_height_portrait; the preview has no real status bar.
-                topInset = if (settings.showStatusBar) 33.dp else 0.dp,
-                widget = { id, modifier -> HostedWidget(runtime, id, modifier) },
-            )
-        }
+        CoverPreview(runtime)
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             TierBadge(caps.tier)
