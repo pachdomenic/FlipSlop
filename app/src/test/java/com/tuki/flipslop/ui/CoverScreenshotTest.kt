@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.tuki.flipslop.apps.AppEntry
+import com.tuki.flipslop.core.DeviceProfile
 import com.tuki.flipslop.data.CoverPage
 import com.tuki.flipslop.media.MediaState
 import com.tuki.flipslop.notifications.CoverAction
@@ -30,6 +31,7 @@ import com.tuki.flipslop.toggles.ToggleStates
 import com.tuki.flipslop.ui.cover.BatteryInfo
 import com.tuki.flipslop.ui.cover.CoverScreen
 import com.tuki.flipslop.ui.cover.CoverUiState
+import com.tuki.flipslop.ui.cover.DockConfig
 import com.tuki.flipslop.ui.cover.NoopCoverActions
 import com.tuki.flipslop.ui.theme.FlipSlopTheme
 import java.util.Calendar
@@ -44,7 +46,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Renders every cover pane at the arcfox cover configuration: 1080x1272 px at
- * 360 dpi = 480x565 dp, with the 143 dp bottom margin from the device tree.
+ * 360 dpi = 480x565 dp, with the camera block from the arcfox profile drawn in.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -52,8 +54,11 @@ import org.robolectric.annotation.GraphicsMode
 class CoverScreenshotTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
+    private val arcfox = DeviceProfile.ARCFOX
 
     @Test fun home() = shoot(CoverPage.HOME)
+    @Test fun homeIdle() = shoot(CoverPage.HOME, idle = true, name = "home_idle")
+    @Test fun homeClassicDock() = shoot(CoverPage.HOME, docked = false, name = "home_classic")
     @Test fun notifications() = shoot(CoverPage.NOTIFICATIONS)
     @Test fun media() = shoot(CoverPage.MEDIA)
     @Test fun apps() = shoot(CoverPage.APPS)
@@ -63,8 +68,19 @@ class CoverScreenshotTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun shoot(page: CoverPage) {
-        val state = sampleState()
+    private fun shoot(
+        page: CoverPage,
+        idle: Boolean = false,
+        docked: Boolean = true,
+        name: String = page.name.lowercase(),
+    ) {
+        val full = sampleState()
+        val state = full.copy(
+            notifications = if (idle) emptyList() else full.notifications,
+            media = if (idle) null else full.media,
+            locked = idle,
+            dock = full.dock.copy(toolbar = docked, notifications = docked, media = docked),
+        )
         // The clock, wavy progress and media ticker never go idle: drive time by hand.
         compose.mainClock.autoAdvance = false
         compose.setContent {
@@ -80,7 +96,7 @@ class CoverScreenshotTest {
             }
         }
         compose.mainClock.advanceTimeBy(1_500)
-        compose.onRoot().captureRoboImage("screenshots/cover_${page.name.lowercase()}.png")
+        compose.onRoot().captureRoboImage("screenshots/cover_$name.png")
     }
 
     private fun sampleState(): CoverUiState {
@@ -119,8 +135,10 @@ class CoverScreenshotTest {
             pinnedApps = apps.take(6),
             allApps = apps,
             toggles = ToggleStates(torchAvailable = true, torch = false, dnd = true, wifi = true, bluetooth = true, bluetoothAvailable = true, brightness = 0.6f, canWriteSettings = true),
-            bottomInsetDp = 143,
+            bottomInsetDp = arcfox.coverBottomInsetDp,
             edgePaddingDp = 24,
+            dock = DockConfig(cameraSide = arcfox.coverCameraSide, cameraWidthDp = arcfox.coverCameraWidthDp),
+            showCameraGuide = true,
         )
     }
 
