@@ -232,41 +232,41 @@ fun CoverScreen(
                             ),
                         contentAlignment = Alignment.Center,
                     ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(DockMetrics.Gap),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        // A pill steps aside on its own page: the page already shows the same thing.
-                        // targetPage, so it starts leaving while the swipe is still going.
-                        val target = pages.getOrNull(pager.targetPage)
-                    // Home in cards mode already shows the player and notifications.
-                    val cardsHome = state.homeStyle == HomeStyle.CARDS && !(state.isIdle && state.idleAospClock)
-                        AnimatedVisibility(
-                            visible = dockMedia && target != CoverPage.MEDIA && !(target == CoverPage.HOME && cardsHome),
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically(),
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(DockMetrics.Gap),
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            DockMedia(
-                                state = state,
-                                actions = actions,
-                                onClick = { if (!goTo(CoverPage.MEDIA)) actions.mediaOpen() },
-                            )
+                            // A pill steps aside on its own page: the page already shows the same thing.
+                            // targetPage, so it starts leaving while the swipe is still going.
+                            val target = pages.getOrNull(pager.targetPage)
+                            // Home in cards mode already shows the player and notifications.
+                            val cardsHome = state.homeStyle == HomeStyle.CARDS && !(state.isIdle && state.idleAospClock)
+                            AnimatedVisibility(
+                                visible = dockMedia && target != CoverPage.MEDIA && !(target == CoverPage.HOME && cardsHome),
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically(),
+                            ) {
+                                DockMedia(
+                                    state = state,
+                                    actions = actions,
+                                    onClick = { if (!goTo(CoverPage.MEDIA)) actions.mediaOpen() },
+                                )
+                            }
+                            AnimatedVisibility(
+                                visible = dockNotifications && target != CoverPage.NOTIFICATIONS && !(target == CoverPage.HOME && cardsHome),
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically(),
+                            ) {
+                                DockNotifications(state, onClick = { goTo(CoverPage.NOTIFICATIONS) })
+                            }
+                            if (showDots) {
+                                PageDots(
+                                    pages = pages.size,
+                                    current = pager.currentPage,
+                                    onClick = { barShown = !barShown },
+                                )
+                            }
                         }
-                        AnimatedVisibility(
-                            visible = dockNotifications && target != CoverPage.NOTIFICATIONS && !(target == CoverPage.HOME && cardsHome),
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically(),
-                        ) {
-                            DockNotifications(state, onClick = { goTo(CoverPage.NOTIFICATIONS) })
-                        }
-                        if (showDots) {
-                            PageDots(
-                                pages = pages.size,
-                                current = pager.currentPage,
-                                onClick = { barShown = !barShown },
-                            )
-                        }
-                    }
                     }
                 }
 

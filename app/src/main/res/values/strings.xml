@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name" translatable="false">FlipSlop</string>
     <string name="tile_label">Cover launcher</string>
     <string name="tile_on">Shows on fold</string>
@@ -87,7 +87,7 @@
     <string name="hint_cannot_auto_show">The cover will not open on its own yet. Allow \"Display over other apps\" or \"Full screen notifications\" below.</string>
 
     <string name="section_lock">Lock screen</string>
-    <string name="cat_access_desc">%1$d of %2$d allowed</string>
+    <string name="cat_access_desc" tools:ignore="PluralsCandidate">%1$d of %2$d allowed</string>
     <string name="cat_behaviour_desc">When the cover launcher shows up</string>
     <string name="cat_lock_desc">Clock, music and notifications while locked</string>
     <string name="cat_cover_desc">Pages, apps, widgets, Home and notifications layout</string>

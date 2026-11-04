@@ -5,6 +5,7 @@ import android.database.ContentObserver
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import androidx.core.net.toUri
 import com.tuki.flipslop.core.HomeApp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,7 +42,7 @@ class SystemIconTheme(private val context: Context) {
             _themed.value = false
             return
         }
-        val uri = Uri.parse("content://$home.grid_control/icon_themed")
+        val uri = "content://$home.grid_control/icon_themed".toUri()
         val value: Boolean? = runCatching {
             context.contentResolver.query(uri, null, null, null, null)?.use { c ->
                 val column = c.getColumnIndex(COLUMN)

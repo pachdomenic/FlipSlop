@@ -37,9 +37,9 @@ import com.tuki.flipslop.notifications.forLockScreen
 fun LockScreen(
     state: CoverUiState,
     actions: CoverActions,
+    modifier: Modifier = Modifier,
     contentModifier: Modifier,
     stripModifier: Modifier,
-    modifier: Modifier = Modifier,
 ) {
     val swipeThreshold = with(LocalDensity.current) { 64.dp.toPx() }
     Box(
