@@ -85,6 +85,7 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
     val titleCover = stringResource(R.string.section_cover)
     val titleDiagnostics = stringResource(R.string.section_diagnostics)
     val titleCamera = stringResource(R.string.section_camera)
+    val titleStyle = stringResource(R.string.section_style)
 
     SettingsScaffold(
         title = stringResource(R.string.app_name),
@@ -125,12 +126,19 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                 navRow(Icons.Rounded.ViewCarousel, R.string.pref_pages, R.string.pref_pages_desc) { navigate(Route.PAGES) },
                 navRow(Icons.Rounded.Apps, R.string.pref_apps, R.string.pref_apps_desc) { navigate(Route.APPS) },
                 navRow(Icons.Rounded.Widgets, R.string.pref_widgets, R.string.pref_widgets_desc) { navigate(Route.WIDGETS) },
+                switchRow(Icons.Rounded.SignalCellularAlt, R.string.pref_status_bar, R.string.pref_status_bar_desc, settings.showStatusBar) {
+                    scope.launch { prefs.setShowStatusBar(it) }
+                },
+            ),
+        )
+
+        segmentedGroup(
+            title = titleStyle,
+            key = "style",
+            rows = listOf(
                 { shapes -> ClockStyleRow(settings.clockStyle, shapes) { s -> scope.launch { prefs.setClockStyle(s) } } },
                 switchRow(Icons.Rounded.AccessTime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, settings.idleAospClock) {
                     scope.launch { prefs.setIdleAospClock(it) }
-                },
-                switchRow(Icons.Rounded.SignalCellularAlt, R.string.pref_status_bar, R.string.pref_status_bar_desc, settings.showStatusBar) {
-                    scope.launch { prefs.setShowStatusBar(it) }
                 },
                 switchRow(Icons.Rounded.Album, R.string.pref_media_art, R.string.pref_media_art_desc, settings.mediaArtBackground) {
                     scope.launch { prefs.setMediaArtBackground(it) }
