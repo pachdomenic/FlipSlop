@@ -27,6 +27,10 @@
         <item quantity="one">%d notification</item>
         <item quantity="other">%d notifications</item>
     </plurals>
+    <plurals name="more_notifications">
+        <item quantity="one">%d more</item>
+        <item quantity="other">%d more</item>
+    </plurals>
     <string name="notifications_empty">You\'re all caught up</string>
     <string name="notifications_need_access">Allow notification access to see notifications on the cover</string>
     <string name="clear_all">Clear all</string>
