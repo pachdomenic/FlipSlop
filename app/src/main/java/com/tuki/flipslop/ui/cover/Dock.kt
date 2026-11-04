@@ -208,11 +208,13 @@ fun DockMedia(state: CoverUiState, actions: CoverActions, onClick: () -> Unit, m
             Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.45f)))
         }
         Row(Modifier.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            // The art opens the player itself; the rest of the pill opens the media page.
             Box(
                 Modifier
                     .size(32.dp)
                     .clip(MaterialShapes.Cookie9Sided.toShape())
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .clickable(onClickLabel = stringResource(R.string.open_player), onClick = actions::mediaOpen),
                 contentAlignment = Alignment.Center,
             ) {
                 if (art != null) {

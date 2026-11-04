@@ -3,6 +3,7 @@ package com.tuki.flipslop.media
 import android.app.ActivityOptions
 import com.tuki.flipslop.core.ActivityStarts
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.media.MediaMetadata
@@ -92,12 +93,28 @@ class MediaRepository(private val context: Context) {
     fun previous() = controller?.transportControls?.skipToPrevious()
     fun seekTo(ms: Long) = controller?.transportControls?.seekTo(ms)
 
-    fun openApp() {
-        val pi = controller?.sessionActivity ?: return
-        val options = ActivityOptions.makeBasic()
-            .setLaunchDisplayId(Display.DEFAULT_DISPLAY)
-            .setPendingIntentBackgroundActivityStartMode(ActivityStarts.allowBackgroundStart)
-        runCatching { pi.send(context, 0, null, null, null, null, options.toBundle()) }
+    /**
+     * Opens the player that owns the session: its session activity when it
+     * set one, otherwise the app's launcher activity (plenty of local file
+     * players never set a session activity).
+     */
+    fun openApp(): Boolean {
+        val c = controller ?: return false
+        c.sessionActivity?.let { pi ->
+            val options = ActivityOptions.makeBasic()
+                .setLaunchDisplayId(Display.DEFAULT_DISPLAY)
+                .setPendingIntentBackgroundActivityStartMode(ActivityStarts.allowBackgroundStart)
+            val sent = runCatching { pi.send(context, 0, null, null, null, null, options.toBundle()) }
+                .onFailure { Log.w(TAG, "session activity failed, falling back to the app", it) }
+                .isSuccess
+            if (sent) return true
+        }
+        val launch = context.packageManager.getLaunchIntentForPackage(c.packageName) ?: return false
+        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+        val options = ActivityOptions.makeBasic().setLaunchDisplayId(Display.DEFAULT_DISPLAY)
+        return runCatching { context.startActivity(launch, options.toBundle()) }
+            .onFailure { Log.w(TAG, "could not open ${c.packageName}", it) }
+            .isSuccess
     }
 
     private fun refreshSessions() {

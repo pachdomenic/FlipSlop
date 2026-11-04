@@ -246,7 +246,11 @@ class CoverActivity : ComponentActivity() {
             runtime.media.seekTo(positionMs)
         }
 
-        override fun mediaOpen() = unlocked { runtime.media.openApp() }
+        override fun mediaOpen() = unlocked {
+            if (!runtime.media.openApp()) {
+                Toast.makeText(this@CoverActivity, R.string.cannot_open, Toast.LENGTH_SHORT).show()
+            }
+        }
 
         override fun launchApp(entry: AppEntry) = runtime.apps.launch(this@CoverActivity, entry)
         override fun togglePin(entry: AppEntry) = runtime.apps.togglePin(entry)

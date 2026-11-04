@@ -39,6 +39,7 @@
     <string name="pause">Пауза</string>
     <string name="next">Следующий</string>
     <string name="previous">Предыдущий</string>
+    <string name="open_player">Открыть плеер</string>
 
     <string name="apps_pinned">Закреплённые</string>
     <string name="apps_all">Все</string>

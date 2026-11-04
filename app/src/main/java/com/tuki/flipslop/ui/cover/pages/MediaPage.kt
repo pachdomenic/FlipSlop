@@ -96,7 +96,7 @@ fun MediaPage(state: CoverUiState, actions: CoverActions, modifier: Modifier = M
                     .size(side)
                     .clip(MorphShape(morph, progress))
                     .background(MaterialTheme.colorScheme.secondaryContainer)
-                    .clickable(onClick = actions::mediaOpen),
+                    .clickable(onClickLabel = stringResource(R.string.open_player), onClick = actions::mediaOpen),
                 contentAlignment = Alignment.Center,
             ) {
                 if (art != null) {
