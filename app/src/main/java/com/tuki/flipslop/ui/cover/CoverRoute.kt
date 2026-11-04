@@ -22,7 +22,12 @@ import com.tuki.flipslop.service.CoverRuntime
 
 /** Collects every runtime flow into one [CoverUiState]. */
 @Composable
-fun rememberCoverUiState(runtime: CoverRuntime, locked: Boolean, edgePaddingDp: Int): CoverUiState {
+fun rememberCoverUiState(
+    runtime: CoverRuntime,
+    locked: Boolean,
+    edgePaddingDp: Int,
+    showCameraGuide: Boolean = false,
+): CoverUiState {
     val context = LocalContext.current
     val settings by runtime.settings.collectAsStateWithLifecycle()
     val notifications by runtime.notifications.items.collectAsStateWithLifecycle()
@@ -72,6 +77,14 @@ fun rememberCoverUiState(runtime: CoverRuntime, locked: Boolean, edgePaddingDp: 
         bottomInsetDp = settings.bottomInsetDp,
         edgePaddingDp = edgePaddingDp,
         clockStyle = settings.clockStyle,
+        dock = DockConfig(
+            cameraSide = settings.cameraSide,
+            cameraWidthDp = settings.cameraWidthDp,
+            toolbar = settings.dockToolbar,
+            notifications = settings.dockNotifications,
+            media = settings.dockMedia,
+        ),
+        showCameraGuide = showCameraGuide,
     )
 }
 

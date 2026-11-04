@@ -2,7 +2,10 @@ package com.tuki.flipslop.ui.cover
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -14,17 +17,8 @@ import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.ToggleOn
 import androidx.compose.material.icons.rounded.Widgets
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FloatingToolbarDefaults
-import androidx.compose.material3.HorizontalFloatingToolbar
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
@@ -33,9 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tuki.flipslop.R
+import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.data.CoverPage
 import com.tuki.flipslop.ui.cover.pages.AppsPage
 import com.tuki.flipslop.ui.cover.pages.HomePage
@@ -44,9 +38,6 @@ import com.tuki.flipslop.ui.cover.pages.NotificationsPage
 import com.tuki.flipslop.ui.cover.pages.TogglesPage
 import com.tuki.flipslop.ui.cover.pages.WidgetsPage
 import kotlinx.coroutines.launch
-
-/** Height of the floating toolbar plus its breathing room. */
-private val ToolbarSpace = 88.dp
 
 @Composable
 fun CoverScreen(
@@ -68,86 +59,133 @@ fun CoverScreen(
 
     val edge = state.edgePaddingDp.dp
     val bottom = state.bottomInsetDp.dp
+    val dock = state.dock
+    val dockMedia = dock.media && state.media != null
+    val dockNotifications = dock.notifications && state.notifications.isNotEmpty()
+
+    val goTo: (CoverPage) -> Boolean = { page ->
+        val i = pages.indexOf(page)
+        if (i >= 0) scope.launch { pager.animateScrollToPage(i) }
+        i >= 0
+    }
+
+    // Height of the dock column; the pager keeps clear of it and of the camera block.
+    val dockRows = listOfNotNull(
+        DockMetrics.MediaHeight.takeIf { dockMedia },
+        DockMetrics.NotificationsHeight.takeIf { dockNotifications },
+        DockMetrics.ToolbarHeight.takeIf { dock.toolbar },
+    )
+    val dockHeight = if (dockRows.isEmpty()) {
+        0.dp
+    } else {
+        dockRows.fold(0.dp) { acc, h -> acc + h } + DockMetrics.Gap * (dockRows.size - 1) + DockMetrics.BottomMargin
+    }
+    val reserved = maxOf(bottom, dockHeight)
+    val contentBottom = if (dock.toolbar) reserved + 8.dp else reserved + DockMetrics.FloatingToolbarHeight + 20.dp
 
     // No Surface at the root (the wallpaper shows through), so set the content color here.
     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
-    Box(
-        modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    0f to Color.Black.copy(alpha = 0.55f),
-                    0.5f to Color.Black.copy(alpha = 0.35f),
-                    1f to Color.Black.copy(alpha = 0.7f),
-                ),
-            ),
-    ) {
-        HorizontalPager(
-            state = pager,
-            modifier = Modifier.fillMaxSize(),
-            beyondViewportPageCount = 1,
-            key = { pages[it].name },
-        ) { index ->
-            val pageModifier = Modifier
+        BoxWithConstraints(
+            modifier
                 .fillMaxSize()
-                .padding(start = edge, end = edge, top = edge, bottom = bottom + ToolbarSpace)
-            when (pages[index]) {
-                CoverPage.HOME -> HomePage(
-                    state = state,
-                    actions = actions,
-                    onOpenNotifications = {
-                        val i = pages.indexOf(CoverPage.NOTIFICATIONS)
-                        if (i >= 0) scope.launch { pager.animateScrollToPage(i) }
-                    },
-                    modifier = pageModifier,
-                )
-                CoverPage.NOTIFICATIONS -> NotificationsPage(state, actions, pageModifier)
-                CoverPage.MEDIA -> MediaPage(state, actions, pageModifier)
-                CoverPage.APPS -> AppsPage(state, actions, pageModifier)
-                CoverPage.WIDGETS -> WidgetsPage(state, actions, pageModifier, widget)
-                CoverPage.TOGGLES -> TogglesPage(state, actions, pageModifier)
-            }
-        }
-
-        HorizontalFloatingToolbar(
-            expanded = true,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = bottom + 12.dp),
-            colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.Black.copy(alpha = 0.55f),
+                        0.5f to Color.Black.copy(alpha = 0.35f),
+                        1f to Color.Black.copy(alpha = 0.7f),
+                    ),
+                ),
         ) {
-            pages.forEachIndexed { index, page ->
-                val selected = pager.currentPage == index
-                val onClick: () -> Unit = { scope.launch { pager.animateScrollToPage(index) } }
-                val label = stringResource(page.labelRes)
-                val icon: @Composable () -> Unit = {
-                    val count = if (page == CoverPage.NOTIFICATIONS) state.notifications.size else 0
-                    if (count > 0 && !selected) {
-                        BadgedBox(badge = { Badge { Text(count.coerceAtMost(99).toString()) } }) {
-                            Icon(page.icon, contentDescription = label)
-                        }
-                    } else {
-                        Icon(page.icon, contentDescription = label)
+            val cameraWidth = dock.cameraWidthDp.dp.coerceIn(0.dp, maxOf(0.dp, maxWidth - MinDockWidth))
+            val cameraLeft = dock.cameraSide == CameraSide.LEFT
+
+            HorizontalPager(
+                state = pager,
+                modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 1,
+                key = { pages[it].name },
+            ) { index ->
+                val pageModifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = edge, end = edge, top = edge, bottom = contentBottom)
+                when (pages[index]) {
+                    CoverPage.HOME -> HomePage(
+                        state = state,
+                        actions = actions,
+                        onOpenNotifications = { goTo(CoverPage.NOTIFICATIONS) },
+                        modifier = pageModifier,
+                    )
+                    CoverPage.NOTIFICATIONS -> NotificationsPage(state, actions, pageModifier)
+                    CoverPage.MEDIA -> MediaPage(state, actions, pageModifier)
+                    CoverPage.APPS -> AppsPage(state, actions, pageModifier)
+                    CoverPage.WIDGETS -> WidgetsPage(state, actions, pageModifier, widget)
+                    CoverPage.TOGGLES -> TogglesPage(state, actions, pageModifier)
+                }
+            }
+
+            if (state.showCameraGuide && cameraWidth > 0.dp && bottom > 0.dp) {
+                CameraGuide(
+                    width = cameraWidth,
+                    height = bottom,
+                    modifier = Modifier.align(if (cameraLeft) Alignment.BottomStart else Alignment.BottomEnd),
+                )
+            }
+
+            // The strip beside the camera block.
+            if (dockRows.isNotEmpty()) {
+                Column(
+                    Modifier
+                        .align(if (cameraLeft) Alignment.BottomEnd else Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .padding(
+                            start = if (cameraLeft) cameraWidth else edge,
+                            end = if (cameraLeft) edge else cameraWidth,
+                            bottom = DockMetrics.BottomMargin,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(DockMetrics.Gap),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (dockMedia) {
+                        DockMedia(
+                            state = state,
+                            actions = actions,
+                            onClick = { if (!goTo(CoverPage.MEDIA)) actions.mediaOpen() },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (dockNotifications) {
+                        DockNotifications(state, onClick = { goTo(CoverPage.NOTIFICATIONS) })
+                    }
+                    if (dock.toolbar) {
+                        PageBar(
+                            pages = pages,
+                            current = pager.currentPage,
+                            notificationCount = state.notifications.size,
+                            compact = true,
+                            onSelect = { scope.launch { pager.animateScrollToPage(it) } },
+                        )
                     }
                 }
-                if (selected) {
-                    FilledIconButton(
-                        onClick = onClick,
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            contentColor = MaterialTheme.colorScheme.primaryContainer,
-                        ),
-                        content = icon,
-                    )
-                } else {
-                    IconButton(onClick = onClick, shapes = IconButtonDefaults.shapes(), content = icon)
-                }
+            }
+
+            if (!dock.toolbar) {
+                PageBar(
+                    pages = pages,
+                    current = pager.currentPage,
+                    notificationCount = state.notifications.size,
+                    compact = false,
+                    onSelect = { scope.launch { pager.animateScrollToPage(it) } },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = reserved + 12.dp),
+                )
             }
         }
     }
-    }
 }
+
+/** The dock never gets narrower than this, whatever the camera width setting says. */
+private val MinDockWidth = 160.dp
 
 val CoverPage.icon: ImageVector
     get() = when (this) {

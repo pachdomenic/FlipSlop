@@ -1,6 +1,7 @@
 package com.tuki.flipslop.ui.cover
 
 import com.tuki.flipslop.apps.AppEntry
+import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.data.ClockStyle
 import com.tuki.flipslop.data.CoverPage
 import com.tuki.flipslop.data.DefaultPages
@@ -10,6 +11,15 @@ import com.tuki.flipslop.notifications.CoverNotification
 import com.tuki.flipslop.toggles.ToggleStates
 
 data class BatteryInfo(val level: Int, val charging: Boolean)
+
+/** The strip beside the camera block and what goes into it. */
+data class DockConfig(
+    val cameraSide: CameraSide = CameraSide.LEFT,
+    val cameraWidthDp: Int = 0,
+    val toolbar: Boolean = true,
+    val notifications: Boolean = true,
+    val media: Boolean = true,
+)
 
 data class CoverUiState(
     val now: Long,
@@ -28,6 +38,9 @@ data class CoverUiState(
     /** Padding that keeps content clear of the panel's rounded corners. */
     val edgePaddingDp: Int = 16,
     val clockStyle: ClockStyle = ClockStyle.STACKED,
+    val dock: DockConfig = DockConfig(),
+    /** Draw the camera block (settings preview and screenshots). */
+    val showCameraGuide: Boolean = false,
 )
 
 /** Everything the cover UI can ask for. Defaults do nothing (previews, tests). */

@@ -118,8 +118,20 @@
     <string name="pref_clock">Часы</string>
     <string name="clock_stacked">Столбиком</string>
     <string name="clock_inline">В строку</string>
-    <string name="pref_inset">Отступ снизу: %d dp</string>
+    <string name="pref_inset">Высота блока камер: %d dp</string>
     <string name="pref_inset_desc">Чтобы содержимое не заходило на блок камер внизу обложки</string>
+    <string name="section_camera">Возле камеры</string>
+    <string name="pref_dock_toolbar">Панель страниц</string>
+    <string name="pref_dock_toolbar_desc">Переключатель страниц рядом с камерами, а не над ними</string>
+    <string name="pref_dock_notifications">Значки уведомлений</string>
+    <string name="pref_dock_notifications_desc">Иконки приложений с уведомлениями, нажмите, чтобы открыть их</string>
+    <string name="pref_dock_media">Сейчас играет</string>
+    <string name="pref_dock_media_desc">Трек и пауза рядом с камерами</string>
+    <string name="pref_camera_side">Сторона блока камер</string>
+    <string name="camera_left">Слева</string>
+    <string name="camera_right">Справа</string>
+    <string name="pref_camera_width">Ширина блока камер: %d dp</string>
+    <string name="pref_camera_width_desc">Док начинается сразу за камерами. Смотрите на превью вверху</string>
 
     <string name="section_diagnostics">Диагностика</string>
     <string name="fold_folded">Закрыт, внешний экран</string>

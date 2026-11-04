@@ -18,9 +18,11 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.PhonelinkSetup
+import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.material.icons.rounded.ViewCarousel
 import androidx.compose.material.icons.rounded.Widgets
@@ -52,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tuki.flipslop.BuildConfig
 import com.tuki.flipslop.R
+import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.core.CapabilityState
 import com.tuki.flipslop.core.SystemConfig
 import com.tuki.flipslop.core.Tier
@@ -78,6 +81,7 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
     val titleBehaviour = stringResource(R.string.section_behaviour)
     val titleCover = stringResource(R.string.section_cover)
     val titleDiagnostics = stringResource(R.string.section_diagnostics)
+    val titleCamera = stringResource(R.string.section_camera)
 
     SettingsScaffold(
         title = stringResource(R.string.app_name),
@@ -119,7 +123,41 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                 navRow(Icons.Rounded.Apps, R.string.pref_apps, R.string.pref_apps_desc) { navigate(Route.APPS) },
                 navRow(Icons.Rounded.Widgets, R.string.pref_widgets, R.string.pref_widgets_desc) { navigate(Route.WIDGETS) },
                 { shapes -> ClockStyleRow(settings.clockStyle, shapes) { s -> scope.launch { prefs.setClockStyle(s) } } },
-                { shapes -> InsetRow(settings.bottomInsetDp, shapes) { v -> scope.launch { prefs.setBottomInset(v) } } },
+            ),
+        )
+
+        segmentedGroup(
+            title = titleCamera,
+            key = "camera",
+            rows = listOf(
+                switchRow(Icons.Rounded.ViewCarousel, R.string.pref_dock_toolbar, R.string.pref_dock_toolbar_desc, settings.dockToolbar) {
+                    scope.launch { prefs.setDockToolbar(it) }
+                },
+                switchRow(Icons.Rounded.Notifications, R.string.pref_dock_notifications, R.string.pref_dock_notifications_desc, settings.dockNotifications) {
+                    scope.launch { prefs.setDockNotifications(it) }
+                },
+                switchRow(Icons.Rounded.MusicNote, R.string.pref_dock_media, R.string.pref_dock_media_desc, settings.dockMedia) {
+                    scope.launch { prefs.setDockMedia(it) }
+                },
+                { shapes -> CameraSideRow(settings.cameraSide, shapes) { s -> scope.launch { prefs.setCameraSide(s) } } },
+                { shapes ->
+                    SliderRow(
+                        value = settings.cameraWidthDp,
+                        max = CoverPrefs.MAX_CAMERA_WIDTH_DP,
+                        title = R.string.pref_camera_width,
+                        desc = R.string.pref_camera_width_desc,
+                        shapes = shapes,
+                    ) { v -> scope.launch { prefs.setCameraWidth(v) } }
+                },
+                { shapes ->
+                    SliderRow(
+                        value = settings.bottomInsetDp,
+                        max = CoverPrefs.MAX_INSET_DP,
+                        title = R.string.pref_inset,
+                        desc = R.string.pref_inset_desc,
+                        shapes = shapes,
+                    ) { v -> scope.launch { prefs.setBottomInset(v) } }
+                },
             ),
         )
 
@@ -147,7 +185,7 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
 
 @Composable
 private fun Hero(runtime: CoverRuntime, caps: CapabilityState, fold: FoldSnapshot, host: SettingsHost) {
-    val state = rememberCoverUiState(runtime, locked = false, edgePaddingDp = 16)
+    val state = rememberCoverUiState(runtime, locked = false, edgePaddingDp = 16, showCameraGuide = true)
     Column(
         Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -295,14 +333,50 @@ private fun ClockStyleRow(style: ClockStyle, shapes: ListItemShapes, onChange: (
 }
 
 @Composable
-private fun InsetRow(value: Int, shapes: ListItemShapes, onChange: (Int) -> Unit) {
-    val slider = rememberSliderState(value = value.toFloat(), trackRange = 0f..CoverPrefs.MAX_INSET_DP.toFloat())
+private fun CameraSideRow(side: CameraSide, shapes: ListItemShapes, onChange: (CameraSide) -> Unit) {
+    ListItem(
+        onClick = {},
+        shapes = shapes,
+        leadingContent = { Icon(Icons.Rounded.PhotoCamera, contentDescription = null) },
+        supportingContent = {
+            Row(
+                Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+            ) {
+                ToggleButton(
+                    checked = side == CameraSide.LEFT,
+                    onCheckedChange = { onChange(CameraSide.LEFT) },
+                    shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.camera_left)) }
+                ToggleButton(
+                    checked = side == CameraSide.RIGHT,
+                    onCheckedChange = { onChange(CameraSide.RIGHT) },
+                    shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.camera_right)) }
+            }
+        },
+    ) { Text(stringResource(R.string.pref_camera_side)) }
+}
+
+/** A dp value with a slider; saved when the drag ends, shown live in the title. */
+@Composable
+private fun SliderRow(
+    value: Int,
+    max: Int,
+    title: Int,
+    desc: Int,
+    shapes: ListItemShapes,
+    onChange: (Int) -> Unit,
+) {
+    val slider = rememberSliderState(value = value.toFloat(), trackRange = 0f..max.toFloat())
     ListItem(
         onClick = {},
         shapes = shapes,
         supportingContent = {
             Column {
-                Text(stringResource(R.string.pref_inset_desc))
+                Text(stringResource(desc))
                 Slider(
                     state = slider,
                     onValueChange = { slider.value = it },
@@ -310,7 +384,7 @@ private fun InsetRow(value: Int, shapes: ListItemShapes, onChange: (Int) -> Unit
                 )
             }
         },
-    ) { Text(stringResource(R.string.pref_inset, slider.value.toInt())) }
+    ) { Text(stringResource(title, slider.value.toInt())) }
 }
 
 private fun diagnosticsRows(

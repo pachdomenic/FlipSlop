@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.core.DeviceProfile
 import com.tuki.flipslop.fold.PanelSize
 import kotlinx.coroutines.flow.Flow
@@ -41,6 +42,12 @@ data class CoverSettings(
     val widgetIds: List<Int> = emptyList(),
     val bottomInsetDp: Int = DeviceProfile.current.coverBottomInsetDp,
     val clockStyle: ClockStyle = ClockStyle.STACKED,
+    val cameraSide: CameraSide = DeviceProfile.current.coverCameraSide,
+    val cameraWidthDp: Int = DeviceProfile.current.coverCameraWidthDp,
+    /** What lives in the strip next to the camera block. */
+    val dockToolbar: Boolean = true,
+    val dockNotifications: Boolean = true,
+    val dockMedia: Boolean = true,
 )
 
 class CoverPrefs(context: Context) {
@@ -58,6 +65,12 @@ class CoverPrefs(context: Context) {
             bottomInsetDp = p[BOTTOM_INSET] ?: DeviceProfile.current.coverBottomInsetDp,
             clockStyle = p[CLOCK_STYLE]?.let { runCatching { ClockStyle.valueOf(it) }.getOrNull() }
                 ?: ClockStyle.STACKED,
+            cameraSide = p[CAMERA_SIDE]?.let { runCatching { CameraSide.valueOf(it) }.getOrNull() }
+                ?: DeviceProfile.current.coverCameraSide,
+            cameraWidthDp = p[CAMERA_WIDTH] ?: DeviceProfile.current.coverCameraWidthDp,
+            dockToolbar = p[DOCK_TOOLBAR] ?: true,
+            dockNotifications = p[DOCK_NOTIFICATIONS] ?: true,
+            dockMedia = p[DOCK_MEDIA] ?: true,
         )
     }.distinctUntilChanged()
 
@@ -80,6 +93,11 @@ class CoverPrefs(context: Context) {
     suspend fun setReturnAfterHome(value: Boolean) = store.edit { it[RETURN_AFTER_HOME] = value }
     suspend fun setBottomInset(dp: Int) = store.edit { it[BOTTOM_INSET] = dp.coerceIn(0, MAX_INSET_DP) }
     suspend fun setClockStyle(style: ClockStyle) = store.edit { it[CLOCK_STYLE] = style.name }
+    suspend fun setCameraSide(side: CameraSide) = store.edit { it[CAMERA_SIDE] = side.name }
+    suspend fun setCameraWidth(dp: Int) = store.edit { it[CAMERA_WIDTH] = dp.coerceIn(0, MAX_CAMERA_WIDTH_DP) }
+    suspend fun setDockToolbar(value: Boolean) = store.edit { it[DOCK_TOOLBAR] = value }
+    suspend fun setDockNotifications(value: Boolean) = store.edit { it[DOCK_NOTIFICATIONS] = value }
+    suspend fun setDockMedia(value: Boolean) = store.edit { it[DOCK_MEDIA] = value }
     suspend fun setPages(pages: List<CoverPage>) = store.edit {
         it[PAGES] = pages.distinct().ifEmpty { listOf(CoverPage.HOME) }.joinToString(LIST_SEP) { p -> p.name }
     }
@@ -122,6 +140,7 @@ class CoverPrefs(context: Context) {
 
     companion object {
         const val MAX_INSET_DP = 240
+        const val MAX_CAMERA_WIDTH_DP = 320
         private const val MAX_PANELS = 4
         private const val LIST_SEP = ","
 
@@ -135,5 +154,10 @@ class CoverPrefs(context: Context) {
         private val BOTTOM_INSET = intPreferencesKey("bottom_inset_dp")
         private val CLOCK_STYLE = stringPreferencesKey("clock_style")
         private val KNOWN_PANELS = stringSetPreferencesKey("known_panels")
+        private val CAMERA_SIDE = stringPreferencesKey("camera_side")
+        private val CAMERA_WIDTH = intPreferencesKey("camera_width_dp")
+        private val DOCK_TOOLBAR = booleanPreferencesKey("dock_toolbar")
+        private val DOCK_NOTIFICATIONS = booleanPreferencesKey("dock_notifications")
+        private val DOCK_MEDIA = booleanPreferencesKey("dock_media")
     }
 }

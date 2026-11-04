@@ -76,10 +76,11 @@ fun HomePage(
             val scale = (maxHeight.value / 300f).coerceIn(0.5f, 1.15f)
             ExpressiveClock(state, scale)
         }
+        // Whatever lives in the camera dock is not repeated here.
         val media = state.media
-        if (media != null) {
+        if (media != null && !state.dock.media) {
             MiniMedia(state, actions)
-        } else if (state.notifications.isNotEmpty()) {
+        } else if (state.notifications.isNotEmpty() && !state.dock.notifications) {
             NotificationSummary(state, onOpenNotifications)
         }
     }
