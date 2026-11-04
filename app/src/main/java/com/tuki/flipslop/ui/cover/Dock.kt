@@ -207,26 +207,36 @@ fun DockMedia(state: CoverUiState, actions: CoverActions, onClick: () -> Unit, m
     }
 }
 
-/** Dark outline of the camera block, for the settings preview and screenshots. */
+/**
+ * Dark outline of the camera block (flash + two lenses, lenses on the outer
+ * side), for the settings preview and screenshots.
+ */
 @Composable
-fun CameraGuide(width: Dp, height: Dp, modifier: Modifier = Modifier) {
+fun CameraGuide(width: Dp, height: Dp, outerSideIsEnd: Boolean, modifier: Modifier = Modifier) {
     Box(
         modifier
             .size(width, height)
             .padding(6.dp)
-            .clip(RoundedCornerShape(28.dp))
+            .clip(RoundedCornerShape(32.dp))
             .background(Color.Black),
-        contentAlignment = Alignment.Center,
+        contentAlignment = if (outerSideIsEnd) Alignment.CenterEnd else Alignment.CenterStart,
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            val lens = (minOf(width.value / 2.6f, height.value * 0.62f)).dp
-            repeat(2) {
-                Box(
-                    Modifier
-                        .size(lens)
-                        .clip(CircleShape)
-                        .background(Color(0xFF1C1C22)),
-                )
+        val lens = minOf((width.value - 40f) / 2.3f, height.value * 0.72f).coerceAtLeast(8f).dp
+        val parts = @Composable {
+            Box(Modifier.size(lens / 5).clip(CircleShape).background(Color(0xFF2A2A30)))
+            repeat(2) { Box(Modifier.size(lens).clip(CircleShape).background(Color(0xFF1C1C22))) }
+        }
+        Row(
+            Modifier.padding(horizontal = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (outerSideIsEnd) {
+                parts()
+            } else {
+                // Mirror: lenses first, flash towards the middle.
+                repeat(2) { Box(Modifier.size(lens).clip(CircleShape).background(Color(0xFF1C1C22))) }
+                Box(Modifier.size(lens / 5).clip(CircleShape).background(Color(0xFF2A2A30)))
             }
         }
     }

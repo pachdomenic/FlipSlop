@@ -127,6 +127,7 @@ fun CoverScreen(
                 CameraGuide(
                     width = cameraWidth,
                     height = bottom,
+                    outerSideIsEnd = !cameraLeft,
                     modifier = Modifier.align(if (cameraLeft) Alignment.BottomStart else Alignment.BottomEnd),
                 )
             }

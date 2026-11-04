@@ -37,16 +37,17 @@ data class DeviceProfile(
          *  - SystemUIResArcfox values-sw430dp: keyguard_indication_margin_bottom = 143dp,
          *    which keeps the lock screen text above the camera block on the cover
          *
-         * The camera block width is an estimate (two lenses in the bottom-left corner);
-         * the user can adjust it in settings.
+         * The camera block (flash + two ~90dp lenses) sits in the bottom-right
+         * corner and is about 264dp wide, measured from a photo of the device;
+         * the tree has no cutout for it. The user can adjust it in settings.
          */
         val ARCFOX = DeviceProfile(
             device = "arcfox",
             coverPanel = PanelSize(1080, 1272),
             innerPanel = PanelSize(1080, 2640),
             coverBottomInsetDp = 143,
-            coverCameraWidthDp = 208,
-            coverCameraSide = CameraSide.LEFT,
+            coverCameraWidthDp = 264,
+            coverCameraSide = CameraSide.RIGHT,
         )
 
         val GENERIC = DeviceProfile(
