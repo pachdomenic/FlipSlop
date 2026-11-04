@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tile_label">Лаунчер обложки</string>
+    <string name="tile_on">При закрытии</string>
+    <string name="tile_off">Выключен</string>
+
+    <string name="channel_status">Фоновая работа</string>
+    <string name="channel_status_desc">Тихое уведомление, пока FlipSlop следит за шарниром</string>
+    <string name="channel_cover">Внешний экран</string>
+    <string name="channel_cover_desc">Открывает лаунчер обложки, если Android не дал ему запуститься самому</string>
+    <string name="service_title">Следим за шарниром</string>
+    <string name="service_text">Дайте доступ к уведомлениям, чтобы убрать это уведомление</string>
+    <string name="fallback_title">Лаунчер обложки</string>
+    <string name="fallback_text">Нажмите, чтобы открыть внешний экран</string>
+
+    <string name="page_home">Главная</string>
+    <string name="page_notifications">Уведомления</string>
+    <string name="page_media">Музыка</string>
+    <string name="page_apps">Приложения</string>
+    <string name="page_widgets">Виджеты</string>
+    <string name="page_toggles">Переключатели</string>
+
+    <plurals name="notification_count">
+        <item quantity="one">%d уведомление</item>
+        <item quantity="few">%d уведомления</item>
+        <item quantity="many">%d уведомлений</item>
+        <item quantity="other">%d уведомления</item>
+    </plurals>
+    <string name="notifications_empty">Новых уведомлений нет</string>
+    <string name="notifications_need_access">Разрешите доступ к уведомлениям, чтобы видеть их на обложке</string>
+    <string name="clear_all">Очистить всё</string>
+    <string name="reply_hint">Ответ</string>
+    <string name="send">Отправить</string>
+
+    <string name="media_empty">Сейчас ничего не играет</string>
+    <string name="media_need_access">Разрешите доступ к уведомлениям, чтобы управлять музыкой с обложки</string>
+    <string name="play">Играть</string>
+    <string name="pause">Пауза</string>
+    <string name="next">Следующий</string>
+    <string name="previous">Предыдущий</string>
+
+    <string name="apps_pinned">Закреплённые</string>
+    <string name="apps_all">Все</string>
+    <string name="apps_pinned_empty">Удерживайте приложение во вкладке «Все», чтобы закрепить его здесь</string>
+    <string name="pin">Закрепить</string>
+    <string name="unpin">Открепить</string>
+
+    <string name="widgets_empty">На обложке пока нет виджетов</string>
+    <string name="widgets_add">Добавить виджет</string>
+    <string name="widgets_pick">Выберите виджет</string>
+    <string name="widgets_hint">Каждый виджет занимает свою страницу на обложке. Переключение свайпом вверх и вниз.</string>
+
+    <string name="toggle_torch">Фонарик</string>
+    <string name="toggle_dnd">Не беспокоить</string>
+    <string name="toggle_wifi">Wi-Fi</string>
+    <string name="toggle_bluetooth">Bluetooth</string>
+    <string name="toggle_internet">Интернет</string>
+    <string name="toggle_volume">Громкость</string>
+    <string name="toggle_settings">Настройки</string>
+    <string name="ringer_normal">Звук</string>
+    <string name="ringer_vibrate">Вибрация</string>
+    <string name="ringer_silent">Без звука</string>
+    <string name="auto_brightness">Адаптивная яркость</string>
+
+    <string name="grant">Разрешить</string>
+    <string name="granted">Разрешено</string>
+    <string name="cannot_open">Здесь это не открыть</string>
+    <string name="back">Назад</string>
+    <string name="move_up">Выше</string>
+    <string name="move_down">Ниже</string>
+    <string name="remove">Удалить</string>
+    <string name="reset">Сбросить</string>
+    <string name="search_apps">Поиск приложений</string>
+
+    <string name="tier_basic">Базовый режим</string>
+    <string name="tier_granted">Расширенный доступ</string>
+    <string name="tier_privileged">Системное приложение</string>
+    <string name="open_cover_now">Открыть лаунчер обложки</string>
+    <string name="hint_cannot_auto_show">Пока обложка не будет открываться сама. Разрешите «Поверх других приложений» или «Полноэкранные уведомления» ниже.</string>
+
+    <string name="section_access">Доступ</string>
+    <string name="perm_post">Уведомления</string>
+    <string name="perm_post_desc">Статус и запасной способ открыть обложку</string>
+    <string name="perm_overlay">Поверх других приложений</string>
+    <string name="perm_overlay_desc">Обложка открывается сама, когда вы закрываете телефон</string>
+    <string name="perm_listener">Доступ к уведомлениям</string>
+    <string name="perm_listener_desc">Уведомления, музыка и «Не беспокоить» на обложке. Ещё FlipSlop работает в фоне без постоянного уведомления</string>
+    <string name="perm_fsi">Полноэкранные уведомления</string>
+    <string name="perm_fsi_desc">Показывает обложку поверх экрана блокировки, когда экран выключен</string>
+    <string name="perm_usage">Доступ к истории использования</string>
+    <string name="perm_usage_desc">Возвращает обложку после нажатия «Домой» на ней</string>
+    <string name="perm_write_settings">Изменение системных настроек</string>
+    <string name="perm_write_settings_desc">Регулировка яркости с обложки</string>
+
+    <string name="section_behaviour">Поведение</string>
+    <string name="pref_auto_show">Показывать при закрытии</string>
+    <string name="pref_auto_show_desc">Открывать лаунчер обложки каждый раз, когда телефон закрыт</string>
+    <string name="pref_show_on_wake">Показывать при включении экрана</string>
+    <string name="pref_show_on_wake_desc">Кнопка питания на закрытом телефоне открывает лаунчер обложки</string>
+    <string name="pref_return_home">«Домой» возвращает на обложку</string>
+    <string name="pref_return_home_desc">Кнопка «Домой» на обложке ведёт в FlipSlop, а не в обычный лаунчер</string>
+    <string name="pref_return_home_needs_usage">Нужен доступ к истории использования</string>
+
+    <string name="section_cover">Обложка</string>
+    <string name="pref_pages">Страницы</string>
+    <string name="pref_pages_desc">Какие панели показывать и в каком порядке</string>
+    <string name="pages_hint">Главная включена всегда. Панель внизу обложки идёт в этом порядке.</string>
+    <string name="pref_apps">Приложения</string>
+    <string name="pref_apps_desc">Закреплённые на обложке приложения</string>
+    <plurals name="apps_selected">
+        <item quantity="one">%d закреплено</item>
+        <item quantity="few">%d закреплено</item>
+        <item quantity="many">%d закреплено</item>
+        <item quantity="other">%d закреплено</item>
+    </plurals>
+    <string name="pref_widgets">Виджеты</string>
+    <string name="pref_widgets_desc">Виджеты на обложке</string>
+    <string name="pref_clock">Часы</string>
+    <string name="clock_stacked">Столбиком</string>
+    <string name="clock_inline">В строку</string>
+    <string name="pref_inset">Отступ снизу: %d dp</string>
+    <string name="pref_inset_desc">Чтобы содержимое не заходило на блок камер внизу обложки</string>
+
+    <string name="section_diagnostics">Диагностика</string>
+    <string name="fold_folded">Закрыт, внешний экран</string>
+    <string name="fold_half">Приоткрыт</string>
+    <string name="fold_open">Открыт, внутренний экран</string>
+    <string name="fold_unknown">Положение неизвестно</string>
+    <string name="source_device_state">По DeviceStateManager</string>
+    <string name="source_display">По разрешению активной панели</string>
+    <string name="source_none">Сигнала пока нет</string>
+    <string name="diag_panel">Активная панель</string>
+    <string name="diag_hinge">Угол шарнира</string>
+    <string name="diag_device_state">Device state</string>
+    <string name="diag_known_panels">Запомненные панели</string>
+
+    <string name="about_version">FlipSlop %s</string>
+    <string name="about_text">Лаунчер внешнего экрана для раскладушек на LineageOS. Работает как обычное приложение, а системному не нужны дополнительные разрешения.</string>
+</resources>
