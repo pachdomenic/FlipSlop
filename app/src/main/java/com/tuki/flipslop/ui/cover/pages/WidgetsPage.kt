@@ -1,0 +1,51 @@
+package com.tuki.flipslop.ui.cover.pages
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Widgets
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.tuki.flipslop.R
+import com.tuki.flipslop.ui.cover.CoverActions
+import com.tuki.flipslop.ui.cover.CoverUiState
+
+/** One widget per page; swipe up and down between them. */
+@Composable
+fun WidgetsPage(
+    state: CoverUiState,
+    actions: CoverActions,
+    modifier: Modifier = Modifier,
+    widget: @Composable (id: Int, modifier: Modifier) -> Unit,
+) {
+    if (state.widgetIds.isEmpty()) {
+        EmptyState(
+            icon = Icons.Rounded.Widgets,
+            text = stringResource(R.string.widgets_empty),
+            action = stringResource(R.string.widgets_add),
+            onAction = actions::addWidget,
+            modifier = modifier,
+        )
+        return
+    }
+    val pager = rememberPagerState { state.widgetIds.size }
+    VerticalPager(state = pager, modifier = modifier, key = { state.widgetIds[it] }) { index ->
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.6f),
+            modifier = Modifier.fillMaxSize().padding(vertical = 4.dp),
+        ) {
+            Box(Modifier.fillMaxSize()) {
+                widget(state.widgetIds[index], Modifier.fillMaxSize())
+            }
+        }
+    }
+}

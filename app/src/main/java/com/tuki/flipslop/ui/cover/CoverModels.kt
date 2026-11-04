@@ -1,0 +1,64 @@
+package com.tuki.flipslop.ui.cover
+
+import com.tuki.flipslop.apps.AppEntry
+import com.tuki.flipslop.data.ClockStyle
+import com.tuki.flipslop.data.CoverPage
+import com.tuki.flipslop.media.MediaState
+import com.tuki.flipslop.notifications.CoverAction
+import com.tuki.flipslop.notifications.CoverNotification
+import com.tuki.flipslop.toggles.ToggleStates
+
+data class BatteryInfo(val level: Int, val charging: Boolean)
+
+data class CoverUiState(
+    val now: Long,
+    val is24h: Boolean = true,
+    val battery: BatteryInfo? = null,
+    val locked: Boolean = false,
+    val notifications: List<CoverNotification> = emptyList(),
+    val notificationAccess: Boolean = false,
+    val media: MediaState? = null,
+    val pinnedApps: List<AppEntry> = emptyList(),
+    val allApps: List<AppEntry> = emptyList(),
+    val widgetIds: List<Int> = emptyList(),
+    val toggles: ToggleStates = ToggleStates(),
+    val pages: List<CoverPage> = CoverPage.entries,
+    val bottomInsetDp: Int = 0,
+    /** Padding that keeps content clear of the panel's rounded corners. */
+    val edgePaddingDp: Int = 16,
+    val clockStyle: ClockStyle = ClockStyle.STACKED,
+)
+
+/** Everything the cover UI can ask for. Defaults do nothing (previews, tests). */
+interface CoverActions {
+    fun openNotification(item: CoverNotification) {}
+    fun dismissNotification(key: String) {}
+    fun dismissAllNotifications() {}
+    fun runAction(action: CoverAction) {}
+    fun reply(action: CoverAction, text: String) {}
+    fun grantNotificationAccess() {}
+
+    fun mediaPlayPause() {}
+    fun mediaNext() {}
+    fun mediaPrevious() {}
+    fun mediaSeek(positionMs: Long) {}
+    fun mediaOpen() {}
+
+    fun launchApp(entry: AppEntry) {}
+    fun togglePin(entry: AppEntry) {}
+
+    fun addWidget() {}
+
+    fun setTorch(on: Boolean) {}
+    fun setDnd(on: Boolean) {}
+    fun cycleRinger() {}
+    fun setWifi(on: Boolean) {}
+    fun setBluetooth(on: Boolean) {}
+    fun setBrightness(level: Float) {}
+    fun setAutoBrightness(on: Boolean) {}
+    fun openPanel(action: String) {}
+
+    fun openSettings() {}
+}
+
+object NoopCoverActions : CoverActions
