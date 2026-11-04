@@ -1,6 +1,7 @@
 package com.tuki.flipslop.ui.cover.pages
 
 import android.os.SystemClock
+import android.text.format.DateUtils
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -137,7 +138,10 @@ fun MediaPage(state: CoverUiState, actions: CoverActions, modifier: Modifier = M
                     }
                 },
         )
-        Spacer(Modifier.height(10.dp))
+        if (media.durationMs > 0) {
+            MediaTimes(position, media.durationMs, Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp))
+        }
+        Spacer(Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             FilledTonalIconButton(
                 onClick = actions::mediaPrevious,
@@ -165,3 +169,24 @@ fun MediaPage(state: CoverUiState, actions: CoverActions, modifier: Modifier = M
         }
     }
 }
+
+/** Elapsed time on the left, track length on the right ("1:24 … 3:33"). */
+@Composable
+internal fun MediaTimes(positionMs: Long, durationMs: Long, modifier: Modifier = Modifier) {
+    Row(modifier) {
+        Text(
+            formatTrackTime(positionMs),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            formatTrackTime(durationMs),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** m:ss, or h:mm:ss past an hour. */
+internal fun formatTrackTime(ms: Long): String = DateUtils.formatElapsedTime(ms.coerceAtLeast(0) / 1000)
