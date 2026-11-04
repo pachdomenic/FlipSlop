@@ -72,8 +72,9 @@ import kotlinx.coroutines.delay
 
 /**
  * The card layout shared by the lock screen and the Home page in cards mode:
- * date, clock, up to a few notification cards and the player card. The
- * clock takes whatever height is left and goes to one line when short.
+ * date, clock, notification cards (up to three, one while music plays) and
+ * the player card. The clock takes whatever height is left and goes to one
+ * line when short.
  */
 @Composable
 internal fun CardsLayout(
@@ -84,18 +85,22 @@ internal fun CardsLayout(
     moreCount: Int = 0,
     onMore: (() -> Unit)? = null,
 ) {
+    // The cover is short: with the player out, one notification card leaves the clock room.
+    val room = if (state.media != null) 1 else MAX_CARD_NOTIFICATIONS
+    val shown = lines.take(room)
+    val more = moreCount + (lines.size - shown.size)
     Column(modifier) {
         CardsDate(state)
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             CardsClock(state, stacked = maxHeight >= 200.dp, available = maxHeight.value)
         }
-        lines.forEach { line ->
+        shown.forEach { line ->
             Spacer(Modifier.height(6.dp))
             CompactNotificationCard(line, onClick = { actions.openNotification(line.item) })
         }
-        if (moreCount > 0 && onMore != null) {
+        if (more > 0 && onMore != null) {
             TextButton(onClick = onMore, modifier = Modifier.align(Alignment.End)) {
-                Text(pluralStringResource(R.plurals.more_notifications, moreCount, moreCount))
+                Text(pluralStringResource(R.plurals.more_notifications, more, more))
             }
         }
         if (state.media != null) {
