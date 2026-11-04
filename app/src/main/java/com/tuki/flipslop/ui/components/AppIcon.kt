@@ -23,10 +23,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -90,7 +90,7 @@ object SystemIconShape : Shape {
  *
  * [themed] draws a Material You themed icon instead: the icon's monochrome
  * layer (or, when it has none, the silhouette of its foreground) tinted
- * with the wallpaper palette on a primary container.
+ * with the colors the launcher uses for its themed icons (see ThemedIconColors).
  */
 @Composable
 fun ShapedAppIcon(
@@ -102,14 +102,16 @@ fun ShapedAppIcon(
 ) {
     val px = with(LocalDensity.current) { size.roundToPx() }
     val colors = MaterialTheme.colorScheme
-    val tint = if (themed) colors.onPrimaryContainer.toArgb() else null
+    // Same colors as the home screen's themed icons, not our own palette roles.
+    val launcher = if (themed) rememberThemedIconColors() else null
+    val tint = launcher?.foreground
     val bitmap = remember(drawable, px, tint) { renderIcon(drawable, px, tint) }
     val fullBleed = themed || drawable is AdaptiveIconDrawable
     Box(
         modifier = modifier
             .size(size)
             .clip(shape)
-            .background(if (themed) colors.primaryContainer else colors.surfaceContainerHighest),
+            .background(launcher?.let { Color(it.background) } ?: colors.surfaceContainerHighest),
         contentAlignment = Alignment.Center,
     ) {
         Image(
