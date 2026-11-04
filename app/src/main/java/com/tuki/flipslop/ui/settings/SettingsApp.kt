@@ -42,6 +42,9 @@ enum class Route {
 
     // Under "Cover"
     PAGES, APPS, WIDGETS,
+
+    // Under "Look & style"
+    CLOCK,
 }
 
 private val RouteStackSaver = listSaver<List<Route>, String>(

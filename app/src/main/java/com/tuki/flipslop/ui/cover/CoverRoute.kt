@@ -83,7 +83,7 @@ fun rememberCoverUiState(
         pages = settings.pages,
         bottomInsetDp = settings.bottomInsetDp,
         edgePaddingDp = edgePaddingDp,
-        clockStyle = settings.clockStyle,
+        clock = settings.clock,
         homeStyle = settings.homeStyle,
         notificationStyle = settings.notificationStyle,
         iconShape = settings.iconShape,

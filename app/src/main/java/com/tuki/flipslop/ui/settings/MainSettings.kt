@@ -3,6 +3,28 @@ package com.tuki.flipslop.ui.settings
 import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.CalendarToday
+import androidx.compose.material.icons.rounded.FormatAlignCenter
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.TextFields
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.VerticalAlignTop
+import androidx.compose.material3.FilterChip
+import androidx.compose.ui.graphics.Color
+import com.tuki.flipslop.data.ClockAlign
+import com.tuki.flipslop.data.ClockColor
+import com.tuki.flipslop.data.ClockConfig
+import com.tuki.flipslop.data.ClockFont
+import com.tuki.flipslop.data.DatePosition
+import com.tuki.flipslop.data.DateStyle
+import com.tuki.flipslop.data.HourFormat
+import com.tuki.flipslop.ui.cover.CoverUiState
+import com.tuki.flipslop.ui.cover.fontFamily
+import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -175,8 +197,9 @@ fun CategorySettings(
                     icon = Icons.Rounded.Home,
                     options = HomeStyle.entries,
                     selected = settings.homeStyle,
-                    label = { stringResource(if (it == HomeStyle.CARDS) R.string.home_style_cards else R.string.home_style_dock) },
+                    label = { stringResource(it.labelRes) },
                     shapes = shapes,
+                    content = { Text(stringResource(it.shortLabelRes), maxLines = 1) },
                 ) { s -> scope.launch { prefs.setHomeStyle(s) } }
             },
             { shapes ->
@@ -237,10 +260,7 @@ fun CategorySettings(
                     },
                 ) { m -> scope.launch { prefs.setThemedIcons(m) } }
             },
-            { shapes -> ClockStyleRow(settings.clockStyle, shapes) { s -> scope.launch { prefs.setClockStyle(s) } } },
-            switchRow(Icons.Rounded.AccessTime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, settings.idleAospClock) {
-                scope.launch { prefs.setIdleAospClock(it) }
-            },
+            navRow(Icons.Rounded.AccessTime, R.string.pref_clock, R.string.pref_clock_desc) { navigate(Route.CLOCK) },
             switchRow(Icons.Rounded.Album, R.string.pref_media_art, R.string.pref_media_art_desc, settings.mediaArtBackground) {
                 scope.launch { prefs.setMediaArtBackground(it) }
             },
@@ -306,6 +326,8 @@ fun CategorySettings(
             },
         )
 
+        Route.CLOCK -> clockRows(settings.clock, settings.idleAospClock, prefs, scope)
+
         Route.DIAGNOSTICS -> diagnosticsRows(runtime, fold, caps) + rows(
             { shapes ->
                 SettingsItem(
@@ -331,6 +353,10 @@ fun CategorySettings(
         // The camera screen shows the cover preview, so the sliders have something to move.
         if (route == Route.CAMERA || route == Route.STYLE) {
             item(key = "preview") { CoverPreview(runtime) }
+        }
+        if (route == Route.CLOCK) {
+            // Show the big clock whatever Home is set to, so every change is visible.
+            item(key = "preview") { CoverPreview(runtime) { it.copy(homeStyle = HomeStyle.BIG_CLOCK) } }
         }
         segmentedGroup(title = null, key = route.name, rows = content)
     }
@@ -383,13 +409,14 @@ val Route.titleRes: Int
         Route.PAGES -> R.string.pref_pages
         Route.APPS -> R.string.pref_apps
         Route.WIDGETS -> R.string.pref_widgets
+        Route.CLOCK -> R.string.pref_clock
     }
 
 /** Live, scaled-down cover with the camera block drawn in. */
 @Composable
-private fun CoverPreview(runtime: CoverRuntime) {
+private fun CoverPreview(runtime: CoverRuntime, tweak: (CoverUiState) -> CoverUiState = { it }) {
     val settings by runtime.settings.collectAsStateWithLifecycle()
-    val state = rememberCoverUiState(runtime, locked = false, edgePaddingDp = 16, showCameraGuide = true)
+    val state = tweak(rememberCoverUiState(runtime, locked = false, edgePaddingDp = 16, showCameraGuide = true))
     CoverPreviewFrame(Modifier.padding(vertical = 8.dp)) {
         CoverScreen(
             state = state,
@@ -515,38 +542,205 @@ private fun navRow(icon: ImageVector, title: Int, desc: Int, onClick: () -> Unit
     ) { Text(stringResource(title)) }
 }
 
+/** Everything on the Clock screen. */
 @Composable
-private fun ClockStyleRow(style: ClockStyle, shapes: Shape, onChange: (ClockStyle) -> Unit) {
+private fun clockRows(
+    clock: ClockConfig,
+    idleAospClock: Boolean,
+    prefs: CoverPrefs,
+    scope: CoroutineScope,
+): List<@Composable (Shape) -> Unit> = rows(
+    { shapes -> FontRow(clock, shapes) { f -> scope.launch { prefs.setClockFont(f) } } },
+    { shapes ->
+        SliderRow(
+            value = clock.weight,
+            min = ClockConfig.MIN_WEIGHT,
+            max = ClockConfig.MAX_WEIGHT,
+            steps = (ClockConfig.MAX_WEIGHT - ClockConfig.MIN_WEIGHT) / 50 - 1,
+            title = R.string.pref_clock_weight,
+            desc = R.string.pref_clock_weight_desc,
+            shapes = shapes,
+        ) { v -> scope.launch { prefs.setClockWeight(v) } }
+    },
+    { shapes ->
+        SliderRow(
+            value = clock.scale,
+            min = ClockConfig.MIN_SCALE,
+            max = ClockConfig.MAX_SCALE,
+            steps = (ClockConfig.MAX_SCALE - ClockConfig.MIN_SCALE) / 5 - 1,
+            title = R.string.pref_clock_size,
+            desc = R.string.pref_clock_size_desc,
+            shapes = shapes,
+        ) { v -> scope.launch { prefs.setClockScale(v) } }
+    },
+    { shapes ->
+        ChoiceRow(
+            title = R.string.pref_clock_layout,
+            icon = Icons.Rounded.AccessTime,
+            options = ClockStyle.entries,
+            selected = clock.layout,
+            label = { stringResource(if (it == ClockStyle.STACKED) R.string.clock_stacked else R.string.clock_inline) },
+            shapes = shapes,
+        ) { s -> scope.launch { prefs.setClockStyle(s) } }
+    },
+    { shapes ->
+        ChoiceRow(
+            title = R.string.pref_clock_align,
+            icon = Icons.Rounded.FormatAlignCenter,
+            options = ClockAlign.entries,
+            selected = clock.align,
+            label = { stringResource(if (it == ClockAlign.CENTER) R.string.clock_align_center else R.string.clock_align_start) },
+            shapes = shapes,
+        ) { a -> scope.launch { prefs.setClockAlign(a) } }
+    },
+    { shapes ->
+        val colors = MaterialTheme.colorScheme
+        ChoiceRow(
+            title = R.string.pref_clock_color,
+            icon = Icons.Rounded.Palette,
+            options = ClockColor.entries,
+            selected = clock.color,
+            label = { stringResource(it.labelRes) },
+            shapes = shapes,
+            content = { c ->
+                val swatch = when (c) {
+                    ClockColor.ACCENT -> colors.primaryFixed
+                    ClockColor.PRIMARY -> colors.primary
+                    ClockColor.TERTIARY -> colors.tertiary
+                    ClockColor.WHITE -> Color.White
+                }
+                Box(Modifier.size(22.dp).clip(CircleShape).background(swatch))
+            },
+        ) { c -> scope.launch { prefs.setClockColor(c) } }
+    },
+    { shapes ->
+        ChoiceRow(
+            title = R.string.pref_hour_format,
+            icon = Icons.Rounded.Schedule,
+            options = HourFormat.entries,
+            selected = clock.hourFormat,
+            label = { stringResource(it.labelRes) },
+            shapes = shapes,
+            content = { Text(stringResource(it.shortLabelRes), maxLines = 1) },
+        ) { f -> scope.launch { prefs.setHourFormat(f) } }
+    },
+    switchRow(Icons.Rounded.Timer, R.string.pref_clock_seconds, R.string.pref_clock_seconds_desc, clock.seconds) {
+        scope.launch { prefs.setClockSeconds(it) }
+    },
+    { shapes ->
+        ChoiceRow(
+            title = R.string.pref_date_style,
+            icon = Icons.Rounded.CalendarToday,
+            options = DateStyle.entries,
+            selected = clock.dateStyle,
+            label = { stringResource(it.labelRes) },
+            shapes = shapes,
+            content = { Text(stringResource(it.shortLabelRes), maxLines = 1) },
+        ) { d -> scope.launch { prefs.setDateStyle(d) } }
+    },
+    { shapes ->
+        ChoiceRow(
+            title = R.string.pref_date_position,
+            icon = Icons.Rounded.VerticalAlignTop,
+            options = DatePosition.entries,
+            selected = clock.datePosition,
+            label = { stringResource(if (it == DatePosition.ABOVE) R.string.date_above else R.string.date_below) },
+            shapes = shapes,
+        ) { p -> scope.launch { prefs.setDatePosition(p) } }
+    },
+    switchRow(Icons.Rounded.Bedtime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, idleAospClock) {
+        scope.launch { prefs.setIdleAospClock(it) }
+    },
+)
+
+/** Font chips, each label set in its own font. */
+@Composable
+private fun FontRow(clock: ClockConfig, shapes: Shape, onChange: (ClockFont) -> Unit) {
     SettingsItem(
         onClick = {},
         shapes = shapes,
-        leadingContent = { Icon(Icons.Rounded.AccessTime, contentDescription = null) },
+        leadingContent = { Icon(Icons.Rounded.TextFields, contentDescription = null) },
         supportingContent = {
-            Row(
+            FlowRow(
                 Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                ToggleButton(
-                    checked = style == ClockStyle.STACKED,
-                    onCheckedChange = { onChange(ClockStyle.STACKED) },
-                    shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
-                    modifier = Modifier.weight(1f),
-                ) { Text(stringResource(R.string.clock_stacked)) }
-                ToggleButton(
-                    checked = style == ClockStyle.INLINE,
-                    onCheckedChange = { onChange(ClockStyle.INLINE) },
-                    shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
-                    modifier = Modifier.weight(1f),
-                ) { Text(stringResource(R.string.clock_inline)) }
+                ClockFont.entries.forEach { font ->
+                    val family = clock.copy(font = font).fontFamily()
+                    FilterChip(
+                        selected = font == clock.font,
+                        onClick = { onChange(font) },
+                        label = { Text(stringResource(font.labelRes), fontFamily = family) },
+                    )
+                }
             }
         },
-    ) { Text(stringResource(R.string.pref_clock)) }
+    ) { Text(stringResource(R.string.pref_clock_font)) }
 }
 
-/**
- * One choice out of a few, as connected toggle buttons. [content] draws a
- * button (defaults to its label); the title row names the current choice.
- */
+private val HomeStyle.labelRes: Int
+    get() = when (this) {
+        HomeStyle.CARDS -> R.string.home_style_cards
+        HomeStyle.DOCK -> R.string.home_style_dock
+        HomeStyle.BIG_CLOCK -> R.string.home_style_big
+    }
+
+private val HomeStyle.shortLabelRes: Int
+    get() = when (this) {
+        HomeStyle.CARDS -> R.string.home_style_cards
+        HomeStyle.DOCK -> R.string.home_style_dock_short
+        HomeStyle.BIG_CLOCK -> R.string.home_style_big_short
+    }
+
+private val ClockFont.labelRes: Int
+    get() = when (this) {
+        ClockFont.SYSTEM -> R.string.clock_font_system
+        ClockFont.FLEX -> R.string.clock_font_flex
+        ClockFont.CONDENSED -> R.string.clock_font_condensed
+        ClockFont.SERIF -> R.string.clock_font_serif
+        ClockFont.MONO -> R.string.clock_font_mono
+        ClockFont.CURSIVE -> R.string.clock_font_cursive
+        ClockFont.CASUAL -> R.string.clock_font_casual
+    }
+
+private val ClockColor.labelRes: Int
+    get() = when (this) {
+        ClockColor.ACCENT -> R.string.clock_color_accent
+        ClockColor.PRIMARY -> R.string.clock_color_primary
+        ClockColor.TERTIARY -> R.string.clock_color_tertiary
+        ClockColor.WHITE -> R.string.clock_color_white
+    }
+
+private val HourFormat.labelRes: Int
+    get() = when (this) {
+        HourFormat.SYSTEM -> R.string.hour_format_system
+        HourFormat.H24 -> R.string.hour_format_24
+        HourFormat.H12 -> R.string.hour_format_12
+    }
+
+private val HourFormat.shortLabelRes: Int
+    get() = when (this) {
+        HourFormat.SYSTEM -> R.string.hour_format_system_short
+        HourFormat.H24 -> R.string.hour_format_24_short
+        HourFormat.H12 -> R.string.hour_format_12_short
+    }
+
+private val DateStyle.labelRes: Int
+    get() = when (this) {
+        DateStyle.SHORT -> R.string.date_style_short
+        DateStyle.LONG -> R.string.date_style_long
+        DateStyle.NUMERIC -> R.string.date_style_numeric
+        DateStyle.HIDDEN -> R.string.date_style_hidden
+    }
+
+private val DateStyle.shortLabelRes: Int
+    get() = when (this) {
+        DateStyle.SHORT -> R.string.date_style_short_btn
+        DateStyle.LONG -> R.string.date_style_long_btn
+        DateStyle.NUMERIC -> R.string.date_style_numeric_btn
+        DateStyle.HIDDEN -> R.string.date_style_hidden_btn
+    }
+
 @Composable
 private fun <T> ChoiceRow(
     title: Int,
@@ -644,6 +838,8 @@ private fun SliderRow(
     title: Int,
     desc: Int,
     shapes: Shape,
+    min: Int = 0,
+    steps: Int = 0,
     onChange: (Int) -> Unit,
 ) {
     var local by remember(value) { mutableFloatStateOf(value.toFloat()) }
@@ -656,12 +852,13 @@ private fun SliderRow(
                 Slider(
                     value = local,
                     onValueChange = { local = it },
-                    onValueChangeFinished = { onChange(local.toInt()) },
-                    valueRange = 0f..max.toFloat(),
+                    onValueChangeFinished = { onChange(local.roundToInt()) },
+                    valueRange = min.toFloat()..max.toFloat(),
+                    steps = steps,
                 )
             }
         },
-    ) { Text(stringResource(title, local.toInt())) }
+    ) { Text(stringResource(title, local.roundToInt())) }
 }
 
 private fun diagnosticsRows(

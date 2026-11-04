@@ -2,7 +2,7 @@ package com.tuki.flipslop.ui.cover
 
 import com.tuki.flipslop.apps.AppEntry
 import com.tuki.flipslop.core.CameraSide
-import com.tuki.flipslop.data.ClockStyle
+import com.tuki.flipslop.data.ClockConfig
 import com.tuki.flipslop.data.HomeStyle
 import com.tuki.flipslop.data.NotificationStyle
 import com.tuki.flipslop.data.IconShapeStyle
@@ -49,7 +49,7 @@ data class CoverUiState(
     val bottomInsetDp: Int = 0,
     /** Padding that keeps content clear of the panel's rounded corners. */
     val edgePaddingDp: Int = 16,
-    val clockStyle: ClockStyle = ClockStyle.STACKED,
+    val clock: ClockConfig = ClockConfig(),
     val homeStyle: HomeStyle = HomeStyle.CARDS,
     val notificationStyle: NotificationStyle = NotificationStyle.COMPACT,
     val iconShape: IconShapeStyle = IconShapeStyle.EXPRESSIVE,

@@ -32,8 +32,8 @@ val DefaultPages = listOf(
 
 enum class ClockStyle { STACKED, INLINE }
 
-/** Home page: lock screen style cards, or the expressive clock with the camera dock. */
-enum class HomeStyle { CARDS, DOCK }
+/** Home page: lock screen style cards, the expressive clock with the camera dock, or just a big clock. */
+enum class HomeStyle { CARDS, DOCK, BIG_CLOCK }
 
 /** Notifications page: compact cards like the lock screen, or full cards with actions and reply. */
 enum class NotificationStyle { COMPACT, DETAILED }
@@ -53,7 +53,7 @@ data class CoverSettings(
     val pinsInitialized: Boolean = false,
     val widgetIds: List<Int> = emptyList(),
     val bottomInsetDp: Int = DeviceProfile.current.coverBottomInsetDp,
-    val clockStyle: ClockStyle = ClockStyle.STACKED,
+    val clock: ClockConfig = ClockConfig(),
     val homeStyle: HomeStyle = HomeStyle.CARDS,
     val notificationStyle: NotificationStyle = NotificationStyle.COMPACT,
     val iconShape: IconShapeStyle = IconShapeStyle.EXPRESSIVE,
@@ -96,8 +96,18 @@ class CoverPrefs(context: Context) {
             pinsInitialized = p[PINS_INIT] ?: false,
             widgetIds = p[WIDGETS]?.split(LIST_SEP)?.mapNotNull { it.toIntOrNull() } ?: emptyList(),
             bottomInsetDp = p[BOTTOM_INSET] ?: DeviceProfile.current.coverBottomInsetDp,
-            clockStyle = p[CLOCK_STYLE]?.let { runCatching { ClockStyle.valueOf(it) }.getOrNull() }
-                ?: ClockStyle.STACKED,
+            clock = ClockConfig(
+                layout = p[CLOCK_STYLE].toEnum(ClockStyle.STACKED),
+                font = p[CLOCK_FONT].toEnum(ClockFont.SYSTEM),
+                weight = p[CLOCK_WEIGHT] ?: 400,
+                scale = p[CLOCK_SCALE] ?: 100,
+                color = p[CLOCK_COLOR].toEnum(ClockColor.ACCENT),
+                seconds = p[CLOCK_SECONDS] ?: false,
+                hourFormat = p[CLOCK_HOUR_FORMAT].toEnum(HourFormat.SYSTEM),
+                dateStyle = p[CLOCK_DATE_STYLE].toEnum(DateStyle.SHORT),
+                datePosition = p[CLOCK_DATE_POSITION].toEnum(DatePosition.ABOVE),
+                align = p[CLOCK_ALIGN].toEnum(ClockAlign.CENTER),
+            ),
             homeStyle = p[HOME_STYLE]?.let { runCatching { HomeStyle.valueOf(it) }.getOrNull() } ?: HomeStyle.CARDS,
             notificationStyle = p[NOTIFICATION_STYLE]?.let { runCatching { NotificationStyle.valueOf(it) }.getOrNull() }
                 ?: NotificationStyle.COMPACT,
@@ -141,6 +151,19 @@ class CoverPrefs(context: Context) {
     suspend fun setReturnAfterHome(value: Boolean) = store.edit { it[RETURN_AFTER_HOME] = value }
     suspend fun setBottomInset(dp: Int) = store.edit { it[BOTTOM_INSET] = dp.coerceIn(0, MAX_INSET_DP) }
     suspend fun setClockStyle(style: ClockStyle) = store.edit { it[CLOCK_STYLE] = style.name }
+    suspend fun setClockFont(font: ClockFont) = store.edit { it[CLOCK_FONT] = font.name }
+    suspend fun setClockWeight(weight: Int) = store.edit {
+        it[CLOCK_WEIGHT] = weight.coerceIn(ClockConfig.MIN_WEIGHT, ClockConfig.MAX_WEIGHT)
+    }
+    suspend fun setClockScale(percent: Int) = store.edit {
+        it[CLOCK_SCALE] = percent.coerceIn(ClockConfig.MIN_SCALE, ClockConfig.MAX_SCALE)
+    }
+    suspend fun setClockColor(color: ClockColor) = store.edit { it[CLOCK_COLOR] = color.name }
+    suspend fun setClockSeconds(value: Boolean) = store.edit { it[CLOCK_SECONDS] = value }
+    suspend fun setHourFormat(format: HourFormat) = store.edit { it[CLOCK_HOUR_FORMAT] = format.name }
+    suspend fun setDateStyle(style: DateStyle) = store.edit { it[CLOCK_DATE_STYLE] = style.name }
+    suspend fun setDatePosition(position: DatePosition) = store.edit { it[CLOCK_DATE_POSITION] = position.name }
+    suspend fun setClockAlign(align: ClockAlign) = store.edit { it[CLOCK_ALIGN] = align.name }
     suspend fun setHomeStyle(style: HomeStyle) = store.edit { it[HOME_STYLE] = style.name }
     suspend fun setNotificationStyle(style: NotificationStyle) = store.edit { it[NOTIFICATION_STYLE] = style.name }
     suspend fun setIconShape(style: IconShapeStyle) = store.edit { it[ICON_SHAPE] = style.name }
@@ -214,6 +237,15 @@ class CoverPrefs(context: Context) {
         private val WIDGETS = stringPreferencesKey("widget_ids")
         private val BOTTOM_INSET = intPreferencesKey("bottom_inset_dp")
         private val CLOCK_STYLE = stringPreferencesKey("clock_style")
+        private val CLOCK_FONT = stringPreferencesKey("clock_font")
+        private val CLOCK_WEIGHT = intPreferencesKey("clock_weight")
+        private val CLOCK_SCALE = intPreferencesKey("clock_scale")
+        private val CLOCK_COLOR = stringPreferencesKey("clock_color")
+        private val CLOCK_SECONDS = booleanPreferencesKey("clock_seconds")
+        private val CLOCK_HOUR_FORMAT = stringPreferencesKey("clock_hour_format")
+        private val CLOCK_DATE_STYLE = stringPreferencesKey("clock_date_style")
+        private val CLOCK_DATE_POSITION = stringPreferencesKey("clock_date_position")
+        private val CLOCK_ALIGN = stringPreferencesKey("clock_align")
         private val HOME_STYLE = stringPreferencesKey("home_style")
         private val NOTIFICATION_STYLE = stringPreferencesKey("notification_style")
         private val ICON_SHAPE = stringPreferencesKey("icon_shape")
@@ -234,3 +266,6 @@ class CoverPrefs(context: Context) {
         private val DOCK_MEDIA = booleanPreferencesKey("dock_media")
     }
 }
+
+private inline fun <reified T : Enum<T>> String?.toEnum(default: T): T =
+    this?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: default

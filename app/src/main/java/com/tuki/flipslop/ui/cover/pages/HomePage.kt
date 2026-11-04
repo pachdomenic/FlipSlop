@@ -57,6 +57,12 @@ import com.tuki.flipslop.R
 import com.tuki.flipslop.data.ClockStyle
 import com.tuki.flipslop.data.HomeStyle
 import com.tuki.flipslop.notifications.LockLine
+import com.tuki.flipslop.ui.cover.BigClock
+import com.tuki.flipslop.ui.cover.date
+import com.tuki.flipslop.ui.cover.hours
+import com.tuki.flipslop.ui.cover.minutes
+import com.tuki.flipslop.ui.cover.style
+import com.tuki.flipslop.ui.cover.textColor
 import com.tuki.flipslop.ui.cover.CardsLayout
 import com.tuki.flipslop.ui.cover.MAX_CARD_NOTIFICATIONS
 import com.tuki.flipslop.ui.components.IconImage
@@ -73,6 +79,10 @@ fun HomePage(
     onOpenNotifications: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (state.homeStyle == HomeStyle.BIG_CLOCK) {
+        BigClock(state, modifier)
+        return
+    }
     if (state.isIdle && state.idleAospClock) {
         IdleHome(state, modifier)
         return
@@ -114,19 +124,16 @@ fun HomePage(
 @Composable
 private fun IdleHome(state: CoverUiState, modifier: Modifier) {
     val locale = LocalConfiguration.current.locales[0]
-    val date = remember(state.now / 60_000, locale) {
-        val pattern = DateFormat.getBestDateTimePattern(locale, "EEEdMMM")
-        DateFormat.format(pattern, Date(state.now)).toString()
-    }
-    val time = Date(state.now)
-    val hours = DateFormat.format(if (state.is24h) "HH" else "hh", time).toString()
-    val minutes = DateFormat.format("mm", time).toString()
-    val accent = MaterialTheme.colorScheme.primaryFixed
+    val clock = state.clock
+    val date = clock.date(state.now, locale).orEmpty()
+    val hours = clock.hours(state.now, state.is24h)
+    val minutes = minutes(state.now)
+    val accent = clock.textColor()
 
     Column(modifier) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                date.replaceFirstChar { it.titlecase(locale) },
+                date,
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
@@ -148,9 +155,9 @@ private fun IdleHome(state: CoverUiState, modifier: Modifier) {
                 Modifier.padding(top = (24 * scale).dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                val style = ClockType.idle.copy(
-                    fontSize = ClockType.idle.fontSize * scale,
-                    lineHeight = ClockType.idle.lineHeight * scale,
+                val style = clock.style(
+                    ClockType.idle.fontSize * scale * clock.scale / 100f,
+                    ClockType.idle.lineHeight * scale * clock.scale / 100f,
                 )
                 Digits(hours, style, accent)
                 Digits(minutes, style, accent)
@@ -210,7 +217,7 @@ private fun StatusRow(state: CoverUiState) {
 @Composable
 private fun ExpressiveClock(state: CoverUiState, scale: Float) {
     val date = Date(state.now)
-    val hours = DateFormat.format(if (state.is24h) "HH" else "hh", date).toString()
+    val hours = state.clock.hours(state.now, state.is24h)
     val minutes = DateFormat.format("mm", date).toString()
     val colors = MaterialTheme.colorScheme
 
@@ -231,7 +238,7 @@ private fun ExpressiveClock(state: CoverUiState, scale: Float) {
                 .clip(cookie)
                 .background(colors.primaryContainer.copy(alpha = 0.4f)),
         )
-        when (state.clockStyle) {
+        when (state.clock.layout) {
             ClockStyle.STACKED -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Digits(hours, ClockType.hours.copy(fontSize = ClockType.hours.fontSize * scale, lineHeight = ClockType.hours.lineHeight * scale), colors.primary)
                 Digits(minutes, ClockType.minutes.copy(fontSize = ClockType.minutes.fontSize * scale, lineHeight = ClockType.minutes.lineHeight * scale), colors.tertiary)

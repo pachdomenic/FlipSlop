@@ -113,12 +113,9 @@ internal fun CardsLayout(
 @Composable
 internal fun CardsDate(state: CoverUiState) {
     val locale = LocalConfiguration.current.locales[0]
-    val date = remember(state.now / 60_000, locale) {
-        val pattern = DateFormat.getBestDateTimePattern(locale, "EEEdMMM")
-        DateFormat.format(pattern, Date(state.now)).toString()
-    }
+    val date = state.clock.date(state.now, locale) ?: return
     Text(
-        date.replaceFirstChar { it.titlecase(locale) },
+        date,
         style = MaterialTheme.typography.titleLarge,
         color = MaterialTheme.colorScheme.onSurface,
         maxLines = 1,
@@ -128,23 +125,20 @@ internal fun CardsDate(state: CoverUiState) {
 /** Stacked AOSP-style digits when there is room, one line when music takes it. */
 @Composable
 internal fun CardsClock(state: CoverUiState, stacked: Boolean, available: Float) {
-    val time = Date(state.now)
-    val hours = DateFormat.format(if (state.is24h) "HH" else "hh", time).toString()
-    val minutes = DateFormat.format("mm", time).toString()
-    val accent = MaterialTheme.colorScheme.primaryFixed
+    val clock = state.clock
+    val hours = clock.hours(state.now, state.is24h)
+    val minutes = minutes(state.now)
+    val accent = clock.textColor()
     if (stacked) {
         val scale = (available / 250f).coerceIn(0.5f, 1f)
-        val style = ClockType.idle.copy(
-            fontSize = ClockType.idle.fontSize * scale,
-            lineHeight = ClockType.idle.lineHeight * scale,
-        )
+        val style = clock.style(ClockType.idle.fontSize * scale, ClockType.idle.lineHeight * scale)
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Digits(hours, style, accent)
             Digits(minutes, style, accent)
         }
     } else {
         val size = (available * 0.7f).coerceIn(40f, 96f)
-        val style = ClockType.idle.copy(fontSize = size.sp, lineHeight = size.sp)
+        val style = clock.style(size.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Digits(hours, style, accent)
             Text(":", style = style, color = accent)
