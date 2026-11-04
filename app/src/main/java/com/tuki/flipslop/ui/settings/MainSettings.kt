@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.PhonelinkSetup
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.QueryStats
+import androidx.compose.material.icons.rounded.SignalCellularAlt
 import androidx.compose.material.icons.rounded.ViewCarousel
 import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material3.Button
@@ -128,6 +129,9 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                 switchRow(Icons.Rounded.AccessTime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, settings.idleAospClock) {
                     scope.launch { prefs.setIdleAospClock(it) }
                 },
+                switchRow(Icons.Rounded.SignalCellularAlt, R.string.pref_status_bar, R.string.pref_status_bar_desc, settings.showStatusBar) {
+                    scope.launch { prefs.setShowStatusBar(it) }
+                },
                 switchRow(Icons.Rounded.Album, R.string.pref_media_art, R.string.pref_media_art_desc, settings.mediaArtBackground) {
                     scope.launch { prefs.setMediaArtBackground(it) }
                 },
@@ -200,6 +204,7 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
 
 @Composable
 private fun Hero(runtime: CoverRuntime, caps: CapabilityState, fold: FoldSnapshot, host: SettingsHost) {
+    val settings by runtime.settings.collectAsStateWithLifecycle()
     val state = rememberCoverUiState(runtime, locked = false, edgePaddingDp = 16, showCameraGuide = true)
     Column(
         Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
@@ -209,6 +214,8 @@ private fun Hero(runtime: CoverRuntime, caps: CapabilityState, fold: FoldSnapsho
             CoverScreen(
                 state = state,
                 actions = NoopCoverActions,
+                // arcfox status_bar_height_portrait; the preview has no real status bar.
+                topInset = if (settings.showStatusBar) 33.dp else 0.dp,
                 widget = { id, modifier -> HostedWidget(runtime, id, modifier) },
             )
         }

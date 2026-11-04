@@ -17,6 +17,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
@@ -41,6 +44,8 @@ import com.tuki.flipslop.ui.theme.FlipSlopTheme
 import com.tuki.flipslop.widgets.WidgetAdder
 import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -66,18 +71,17 @@ class CoverActivity : ComponentActivity() {
         window.attributes = window.attributes.apply {
             layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
         }
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            hide(WindowInsetsCompat.Type.systemBars())
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
+        applySystemBars(showStatusBar = runtime.settings.value.showStatusBar)
 
         setContent {
             FlipSlopTheme(darkTheme = true) {
                 val state = rememberCoverUiState(runtime, locked, edgePadding)
+                val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                 Box {
                     CoverScreen(
                         state = state,
                         actions = actions,
+                        topInset = statusBar,
                         widget = { id, modifier -> HostedWidget(runtime, id, modifier) },
                     )
                     BackHandler(enabled = pickingWidget) { pickingWidget = false }
@@ -89,7 +93,7 @@ class CoverActivity : ComponentActivity() {
                         val providers = remember { runtime.widgets.providers() }
                         CoverWidgetPicker(
                             providers = providers,
-                            topInset = edgePadding.dp,
+                            topInset = maxOf(edgePadding.dp, statusBar),
                             bottomInset = state.bottomInsetDp.dp,
                             onPick = { info ->
                                 pickingWidget = false
@@ -99,6 +103,12 @@ class CoverActivity : ComponentActivity() {
                         )
                     }
                 }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                runtime.settings.map { it.showStatusBar }.distinctUntilChanged().collect(::applySystemBars)
             }
         }
 
@@ -159,6 +169,17 @@ class CoverActivity : ComponentActivity() {
         runtime.toggles.stop()
         runtime.widgets.stopListening()
         super.onStop()
+    }
+
+    /** The navigation bar never shows on the cover; the status bar is a setting. */
+    private fun applySystemBars(showStatusBar: Boolean) {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            isAppearanceLightStatusBars = false
+            hide(WindowInsetsCompat.Type.navigationBars())
+            if (showStatusBar) show(WindowInsetsCompat.Type.statusBars())
+            else hide(WindowInsetsCompat.Type.statusBars())
+        }
     }
 
     /** Inset that clears the panel's rounded corners: r * (1 - cos 45°). */

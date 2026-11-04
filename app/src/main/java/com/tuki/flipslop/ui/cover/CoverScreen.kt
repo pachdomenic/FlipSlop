@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tuki.flipslop.R
 import com.tuki.flipslop.core.CameraSide
@@ -68,6 +69,8 @@ fun CoverScreen(
     actions: CoverActions,
     modifier: Modifier = Modifier,
     initialPage: CoverPage = CoverPage.HOME,
+    /** Height of a visible status bar; content starts below it. */
+    topInset: Dp = 0.dp,
     widget: @Composable (id: Int, modifier: Modifier) -> Unit = { _, _ -> },
 ) {
     val pages = state.pages.ifEmpty { listOf(CoverPage.HOME) }
@@ -164,7 +167,7 @@ fun CoverScreen(
             ) { index ->
                 val pageModifier = Modifier
                     .fillMaxSize()
-                    .padding(start = edge, end = edge, top = edge, bottom = contentBottom)
+                    .padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = contentBottom)
                 when (pages[index]) {
                     CoverPage.HOME -> HomePage(
                         state = state,

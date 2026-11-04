@@ -122,6 +122,8 @@
     <string name="pref_inset">Высота блока камер: %d dp</string>
     <string name="pref_inset_desc">Чтобы содержимое не заходило на блок камер внизу обложки</string>
     <string name="pref_idle_clock">Простые часы в покое</string>
+    <string name="pref_status_bar">Статусбар</string>
+    <string name="pref_status_bar_desc">Системные время, сеть и батарея вверху обложки</string>
     <string name="pref_media_art">Обложка трека фоном</string>
     <string name="pref_media_art_desc">Размытая обложка за страницей музыки и в плашке «сейчас играет»</string>
     <string name="pref_idle_clock_desc">Как на экране блокировки AOSP, пока нет уведомлений и ничего не играет</string>

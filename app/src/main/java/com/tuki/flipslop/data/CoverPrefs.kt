@@ -46,6 +46,8 @@ data class CoverSettings(
     val idleAospClock: Boolean = true,
     /** Album art fills the media page background and the now playing pill. */
     val mediaArtBackground: Boolean = true,
+    /** System status bar on the cover (the navigation bar always stays hidden). */
+    val showStatusBar: Boolean = true,
     val cameraSide: CameraSide = DeviceProfile.current.coverCameraSide,
     val cameraWidthDp: Int = DeviceProfile.current.coverCameraWidthDp,
     /** Page bar stays out; otherwise it hides behind page dots until tapped. */
@@ -74,6 +76,7 @@ class CoverPrefs(context: Context) {
                 ?: ClockStyle.STACKED,
             idleAospClock = p[IDLE_AOSP_CLOCK] ?: true,
             mediaArtBackground = p[MEDIA_ART_BACKGROUND] ?: true,
+            showStatusBar = p[SHOW_STATUS_BAR] ?: true,
             cameraSide = p[CAMERA_SIDE]?.let { runCatching { CameraSide.valueOf(it) }.getOrNull() }
                 ?: DeviceProfile.current.coverCameraSide,
             cameraWidthDp = p[CAMERA_WIDTH] ?: DeviceProfile.current.coverCameraWidthDp,
@@ -105,6 +108,7 @@ class CoverPrefs(context: Context) {
     suspend fun setClockStyle(style: ClockStyle) = store.edit { it[CLOCK_STYLE] = style.name }
     suspend fun setIdleAospClock(value: Boolean) = store.edit { it[IDLE_AOSP_CLOCK] = value }
     suspend fun setMediaArtBackground(value: Boolean) = store.edit { it[MEDIA_ART_BACKGROUND] = value }
+    suspend fun setShowStatusBar(value: Boolean) = store.edit { it[SHOW_STATUS_BAR] = value }
     suspend fun setCameraSide(side: CameraSide) = store.edit { it[CAMERA_SIDE] = side.name }
     suspend fun setCameraWidth(dp: Int) = store.edit { it[CAMERA_WIDTH] = dp.coerceIn(0, MAX_CAMERA_WIDTH_DP) }
     suspend fun setPageBarAlways(value: Boolean) = store.edit { it[PAGE_BAR_ALWAYS] = value }
@@ -169,6 +173,7 @@ class CoverPrefs(context: Context) {
         private val KNOWN_PANELS = stringSetPreferencesKey("known_panels")
         private val IDLE_AOSP_CLOCK = booleanPreferencesKey("idle_aosp_clock")
         private val MEDIA_ART_BACKGROUND = booleanPreferencesKey("media_art_background")
+        private val SHOW_STATUS_BAR = booleanPreferencesKey("show_status_bar")
         private val CAMERA_SIDE = stringPreferencesKey("camera_side")
         private val CAMERA_WIDTH = intPreferencesKey("camera_width_dp")
         private val PAGE_BAR_ALWAYS = booleanPreferencesKey("page_bar_always")

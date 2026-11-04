@@ -43,6 +43,8 @@ data class CoverUiState(
     val clockStyle: ClockStyle = ClockStyle.STACKED,
     val idleAospClock: Boolean = true,
     val mediaArtBackground: Boolean = true,
+    /** The system status bar is showing (it has its own battery icon). */
+    val systemStatusBar: Boolean = false,
     val dock: DockConfig = DockConfig(),
     /** Draw the camera block (settings preview and screenshots). */
     val showCameraGuide: Boolean = false,

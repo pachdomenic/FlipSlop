@@ -115,7 +115,7 @@ private fun IdleHome(state: CoverUiState, modifier: Modifier) {
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
             )
-            state.battery?.let { b ->
+            state.battery?.takeUnless { state.systemStatusBar }?.let { b ->
                 Text(
                     "${b.level}%",
                     style = MaterialTheme.typography.titleSmall,
@@ -171,7 +171,7 @@ private fun StatusRow(state: CoverUiState) {
             )
             Spacer(Modifier.width(8.dp))
         }
-        state.battery?.let { b ->
+        state.battery?.takeUnless { state.systemStatusBar }?.let { b ->
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
                 Row(
                     Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
