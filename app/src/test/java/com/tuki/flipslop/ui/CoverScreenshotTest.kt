@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.tuki.flipslop.apps.AppEntry
@@ -91,7 +92,8 @@ class CoverScreenshotTest {
                         .fillMaxSize()
                         .background(Brush.linearGradient(listOf(Color(0xFF3B4A7A), Color(0xFF7A3B6B), Color(0xFF1E2B3A)))),
                 ) {
-                    CoverScreen(state = state, actions = NoopCoverActions, initialPage = page)
+                    // 33dp: arcfox status_bar_height_portrait. Robolectric draws no status bar.
+                    CoverScreen(state = state, actions = NoopCoverActions, initialPage = page, topInset = 33.dp)
                 }
             }
         }
@@ -139,6 +141,7 @@ class CoverScreenshotTest {
             edgePaddingDp = 24,
             dock = DockConfig(cameraSide = arcfox.coverCameraSide, cameraWidthDp = arcfox.coverCameraWidthDp),
             showCameraGuide = true,
+            systemStatusBar = true,
         )
     }
 
