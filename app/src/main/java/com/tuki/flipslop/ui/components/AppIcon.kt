@@ -1,6 +1,9 @@
 package com.tuki.flipslop.ui.components
 
 import android.graphics.Canvas
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
+import android.graphics.Rect
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import androidx.compose.foundation.Image
@@ -23,6 +26,7 @@ import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -80,9 +84,13 @@ object SystemIconShape : Shape {
 }
 
 /**
- * Renders a launcher icon inside an expressive shape. Adaptive icons are drawn
- * edge to edge (background + foreground, no system mask) so the shape is the
- * mask; legacy icons sit centered on a tonal container.
+ * Renders a launcher icon inside [shape]. Adaptive icons are drawn edge to
+ * edge (background + foreground, no system mask) so the shape is the mask;
+ * legacy icons sit centered on a tonal container.
+ *
+ * [themed] draws a Material You themed icon instead: the icon's monochrome
+ * layer (or, when it has none, the silhouette of its foreground) tinted
+ * with the wallpaper palette on a primary container.
  */
 @Composable
 fun ShapedAppIcon(
@@ -90,36 +98,48 @@ fun ShapedAppIcon(
     shape: Shape,
     modifier: Modifier = Modifier,
     size: Dp = 64.dp,
+    themed: Boolean = false,
 ) {
     val px = with(LocalDensity.current) { size.roundToPx() }
-    val adaptive = drawable is AdaptiveIconDrawable
-    val bitmap = remember(drawable, px) { renderIcon(drawable, px) }
+    val colors = MaterialTheme.colorScheme
+    val tint = if (themed) colors.onPrimaryContainer.toArgb() else null
+    val bitmap = remember(drawable, px, tint) { renderIcon(drawable, px, tint) }
+    val fullBleed = themed || drawable is AdaptiveIconDrawable
     Box(
         modifier = modifier
             .size(size)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+            .background(if (themed) colors.primaryContainer else colors.surfaceContainerHighest),
         contentAlignment = Alignment.Center,
     ) {
         Image(
             bitmap = bitmap,
             contentDescription = null,
-            modifier = Modifier.size(if (adaptive) size else size * 0.72f),
+            modifier = Modifier.size(if (fullBleed) size else size * 0.72f),
         )
     }
 }
 
-private fun renderIcon(drawable: Drawable, px: Int): ImageBitmap {
-    val bmp = createBitmap(px.coerceAtLeast(1), px.coerceAtLeast(1))
+private fun renderIcon(drawable: Drawable, px: Int, themedTint: Int?): ImageBitmap {
+    val side = px.coerceAtLeast(1)
+    val bmp = createBitmap(side, side)
     val canvas = Canvas(bmp)
-    if (drawable is AdaptiveIconDrawable) {
-        // Adaptive layers are 108dp with a 72dp safe zone: overscan by 1/6 per side.
-        val inset = px / 6
-        val bounds = android.graphics.Rect(-inset, -inset, px + inset, px + inset)
-        drawable.background?.let { it.bounds = bounds; it.draw(canvas) }
-        drawable.foreground?.let { it.bounds = bounds; it.draw(canvas) }
+    // Adaptive layers are 108dp with a 72dp safe zone: overscan by 1/6 per side.
+    val inset = side / 6
+    val overscan = Rect(-inset, -inset, side + inset, side + inset)
+    if (themedTint != null) {
+        val adaptive = drawable as? AdaptiveIconDrawable
+        val layer = adaptive?.monochrome ?: adaptive?.foreground ?: drawable
+        // Draw a copy: launcher drawables are shared and a color filter would stick.
+        val copy = layer.constantState?.newDrawable()?.mutate() ?: layer
+        copy.bounds = if (adaptive != null) overscan else Rect(side / 5, side / 5, side - side / 5, side - side / 5)
+        copy.colorFilter = PorterDuffColorFilter(themedTint, PorterDuff.Mode.SRC_IN)
+        copy.draw(canvas)
+    } else if (drawable is AdaptiveIconDrawable) {
+        drawable.background?.let { it.bounds = overscan; it.draw(canvas) }
+        drawable.foreground?.let { it.bounds = overscan; it.draw(canvas) }
     } else {
-        drawable.setBounds(0, 0, px, px)
+        drawable.setBounds(0, 0, side, side)
         drawable.draw(canvas)
     }
     return bmp.asImageBitmap()

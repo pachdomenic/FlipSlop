@@ -3,8 +3,7 @@ package com.tuki.flipslop.service
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
+import com.tuki.flipslop.core.HomeApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -39,7 +38,7 @@ class HomeReturnWatcher(
         while (kotlin.coroutines.coroutineContext.isActive) {
             delay(POLL_MS)
             val now = System.currentTimeMillis()
-            val home = homePackage() ?: continue
+            val home = HomeApp.packageName(context) ?: continue
             val homeOnTop = withContext(Dispatchers.Default) {
                 val events = runCatching { usm.queryEvents(since, now) }.getOrNull()
                 var top = false
@@ -56,12 +55,6 @@ class HomeReturnWatcher(
             if (homeOnTop) runtime.launcher.show(CoverLauncher.Reason.HOME)
         }
     }
-
-    private fun homePackage(): String? = context.packageManager
-        .resolveActivity(
-            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
-            PackageManager.MATCH_DEFAULT_ONLY,
-        )?.activityInfo?.packageName
 
     private companion object {
         const val POLL_MS = 1000L

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.PhonelinkSetup
 import androidx.compose.material.icons.rounded.PhotoCamera
@@ -70,6 +71,7 @@ import com.tuki.flipslop.core.Tier
 import com.tuki.flipslop.data.ClockStyle
 import com.tuki.flipslop.data.CoverPrefs
 import com.tuki.flipslop.data.IconShapeStyle
+import com.tuki.flipslop.data.ThemedIcons
 import com.tuki.flipslop.fold.FoldSnapshot
 import com.tuki.flipslop.fold.FoldSource
 import com.tuki.flipslop.fold.FoldState
@@ -161,6 +163,23 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                             )
                         },
                     ) { s -> scope.launch { prefs.setIconShape(s) } }
+                },
+                { shapes ->
+                    val systemThemed by runtime.iconTheme.themed.collectAsStateWithLifecycle()
+                    ChoiceRow(
+                        title = R.string.pref_themed_icons,
+                        icon = Icons.Rounded.Palette,
+                        options = ThemedIcons.entries,
+                        selected = settings.themedIcons,
+                        label = { stringResource(it.labelRes) },
+                        shapes = shapes,
+                        footer = when {
+                            settings.themedIcons != ThemedIcons.SYSTEM -> null
+                            !caps.systemIconTheme -> stringResource(R.string.themed_icons_system_unavailable)
+                            systemThemed -> stringResource(R.string.themed_icons_system_on)
+                            else -> stringResource(R.string.themed_icons_system_off)
+                        },
+                    ) { m -> scope.launch { prefs.setThemedIcons(m) } }
                 },
                 { shapes -> ClockStyleRow(settings.clockStyle, shapes) { s -> scope.launch { prefs.setClockStyle(s) } } },
                 switchRow(Icons.Rounded.AccessTime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, settings.idleAospClock) {
@@ -437,6 +456,13 @@ private fun <T> ChoiceRow(
         },
     ) { Text(stringResource(title)) }
 }
+
+private val ThemedIcons.labelRes: Int
+    get() = when (this) {
+        ThemedIcons.OFF -> R.string.themed_icons_off
+        ThemedIcons.ON -> R.string.themed_icons_on
+        ThemedIcons.SYSTEM -> R.string.themed_icons_system
+    }
 
 private val IconShapeStyle.labelRes: Int
     get() = when (this) {

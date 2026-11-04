@@ -47,6 +47,7 @@ import com.tuki.flipslop.ui.components.rememberIconShape
 import com.tuki.flipslop.ui.components.widgetPickerItems
 import com.tuki.flipslop.ui.cover.icon
 import com.tuki.flipslop.ui.cover.labelRes
+import com.tuki.flipslop.ui.cover.resolve
 import kotlinx.coroutines.launch
 
 @Composable
@@ -112,6 +113,7 @@ private fun <T> List<T>.move(from: Int, delta: Int): List<T> {
 fun AppsSettings(runtime: CoverRuntime, onBack: () -> Unit) {
     val all by runtime.apps.all.collectAsStateWithLifecycle()
     val settings by runtime.settings.collectAsStateWithLifecycle()
+    val systemThemed by runtime.iconTheme.themed.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
     val pinned = settings.pinnedApps.toSet()
     val filtered = remember(all, query) {
@@ -141,7 +143,12 @@ fun AppsSettings(runtime: CoverRuntime, onBack: () -> Unit) {
                 onCheckedChange = { runtime.apps.togglePin(app) },
                 shapes = ListItemDefaults.segmentedShapes(index, filtered.size),
                 modifier = Modifier.padding(bottom = ListItemDefaults.SegmentedGap),
-                leadingContent = { ShapedAppIcon(app.icon, rememberIconShape(index, settings.iconShape), size = 40.dp) },
+                leadingContent = { ShapedAppIcon(
+                        app.icon,
+                        rememberIconShape(index, settings.iconShape),
+                        size = 40.dp,
+                        themed = settings.themedIcons.resolve(systemThemed),
+                    ) },
                 trailingContent = { Checkbox(checked = app.key in pinned, onCheckedChange = null) },
             ) { Text(app.label) }
         }

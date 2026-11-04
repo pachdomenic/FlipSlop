@@ -31,6 +31,8 @@ data class CapabilityState(
     val bindWidgets: Boolean = false,
     /** Hidden DeviceStateManager reachable (system build with hidden API allowlist). */
     val deviceStateApi: Boolean = false,
+    /** The launcher's themed-icons switch is readable (priv-app build). */
+    val systemIconTheme: Boolean = false,
     val isSystemApp: Boolean = false,
 ) {
     val tier: Tier
@@ -46,7 +48,7 @@ data class CapabilityState(
 
 object Capabilities {
 
-    fun read(context: Context, deviceStateApi: Boolean): CapabilityState {
+    fun read(context: Context, deviceStateApi: Boolean, systemIconTheme: Boolean): CapabilityState {
         val pkg = context.packageName
         val nm = context.getSystemService(NotificationManager::class.java)
         return CapabilityState(
@@ -59,6 +61,7 @@ object Capabilities {
             backgroundStarts = granted(context, PERMISSION_BACKGROUND_STARTS),
             bindWidgets = granted(context, Manifest.permission.BIND_APPWIDGET),
             deviceStateApi = deviceStateApi,
+            systemIconTheme = systemIconTheme,
             isSystemApp = (context.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
         )
     }

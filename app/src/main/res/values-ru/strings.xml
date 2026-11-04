@@ -134,6 +134,13 @@
     <string name="icon_shape_circle">Круг</string>
     <string name="icon_shape_squircle">Скруглённый квадрат</string>
     <string name="icon_shape_system">Как в системе</string>
+    <string name="pref_themed_icons">Тематические значки</string>
+    <string name="themed_icons_off">Выкл</string>
+    <string name="themed_icons_on">Вкл</string>
+    <string name="themed_icons_system">Как в системе</string>
+    <string name="themed_icons_system_on">«Обои и стиль»: тематические значки включены</string>
+    <string name="themed_icons_system_off">«Обои и стиль»: тематические значки выключены</string>
+    <string name="themed_icons_system_unavailable">Этот переключатель видит только системная установка FlipSlop, поэтому пока значки обычные</string>
     <string name="section_camera">Возле камеры</string>
     <string name="pref_page_bar_always">Всегда показывать панель страниц</string>
     <string name="pref_page_bar_always_desc">Иначе она спрятана, нажмите на точки страниц у камер, чтобы её вызвать</string>

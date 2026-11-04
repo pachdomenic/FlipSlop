@@ -134,6 +134,13 @@
     <string name="icon_shape_circle">Circle</string>
     <string name="icon_shape_squircle">Rounded square</string>
     <string name="icon_shape_system">Like the system</string>
+    <string name="pref_themed_icons">Themed icons</string>
+    <string name="themed_icons_off">Off</string>
+    <string name="themed_icons_on">On</string>
+    <string name="themed_icons_system">Like the system</string>
+    <string name="themed_icons_system_on">Wallpaper &amp; style: themed icons are on</string>
+    <string name="themed_icons_system_off">Wallpaper &amp; style: themed icons are off</string>
+    <string name="themed_icons_system_unavailable">Only a system install of FlipSlop can read this switch, so icons stay unthemed for now</string>
     <string name="section_camera">Near the camera</string>
     <string name="pref_page_bar_always">Always show the page bar</string>
     <string name="pref_page_bar_always_desc">Otherwise it hides; tap the page dots next to the cameras to bring it out</string>

@@ -35,6 +35,9 @@ enum class ClockStyle { STACKED, INLINE }
 /** Mask for app icons on the cover. SYSTEM follows the icon shape chosen in Wallpaper & style. */
 enum class IconShapeStyle { EXPRESSIVE, CIRCLE, SQUIRCLE, SYSTEM }
 
+/** Monochrome icons tinted with the wallpaper colors. SYSTEM follows Wallpaper & style. */
+enum class ThemedIcons { OFF, ON, SYSTEM }
+
 data class CoverSettings(
     val autoShowOnFold: Boolean = true,
     val showOnWake: Boolean = true,
@@ -46,6 +49,7 @@ data class CoverSettings(
     val bottomInsetDp: Int = DeviceProfile.current.coverBottomInsetDp,
     val clockStyle: ClockStyle = ClockStyle.STACKED,
     val iconShape: IconShapeStyle = IconShapeStyle.EXPRESSIVE,
+    val themedIcons: ThemedIcons = ThemedIcons.SYSTEM,
     /** AOSP lock screen style clock while there are no notifications and nothing plays. */
     val idleAospClock: Boolean = true,
     /** Album art fills the media page background and the now playing pill. */
@@ -80,6 +84,8 @@ class CoverPrefs(context: Context) {
                 ?: ClockStyle.STACKED,
             iconShape = p[ICON_SHAPE]?.let { runCatching { IconShapeStyle.valueOf(it) }.getOrNull() }
                 ?: IconShapeStyle.EXPRESSIVE,
+            themedIcons = p[THEMED_ICONS]?.let { runCatching { ThemedIcons.valueOf(it) }.getOrNull() }
+                ?: ThemedIcons.SYSTEM,
             idleAospClock = p[IDLE_AOSP_CLOCK] ?: true,
             mediaArtBackground = p[MEDIA_ART_BACKGROUND] ?: true,
             showStatusBar = p[SHOW_STATUS_BAR] ?: true,
@@ -113,6 +119,7 @@ class CoverPrefs(context: Context) {
     suspend fun setBottomInset(dp: Int) = store.edit { it[BOTTOM_INSET] = dp.coerceIn(0, MAX_INSET_DP) }
     suspend fun setClockStyle(style: ClockStyle) = store.edit { it[CLOCK_STYLE] = style.name }
     suspend fun setIconShape(style: IconShapeStyle) = store.edit { it[ICON_SHAPE] = style.name }
+    suspend fun setThemedIcons(mode: ThemedIcons) = store.edit { it[THEMED_ICONS] = mode.name }
     suspend fun setIdleAospClock(value: Boolean) = store.edit { it[IDLE_AOSP_CLOCK] = value }
     suspend fun setMediaArtBackground(value: Boolean) = store.edit { it[MEDIA_ART_BACKGROUND] = value }
     suspend fun setShowStatusBar(value: Boolean) = store.edit { it[SHOW_STATUS_BAR] = value }
@@ -178,6 +185,7 @@ class CoverPrefs(context: Context) {
         private val BOTTOM_INSET = intPreferencesKey("bottom_inset_dp")
         private val CLOCK_STYLE = stringPreferencesKey("clock_style")
         private val ICON_SHAPE = stringPreferencesKey("icon_shape")
+        private val THEMED_ICONS = stringPreferencesKey("themed_icons")
         private val KNOWN_PANELS = stringSetPreferencesKey("known_panels")
         private val IDLE_AOSP_CLOCK = booleanPreferencesKey("idle_aosp_clock")
         private val MEDIA_ART_BACKGROUND = booleanPreferencesKey("media_art_background")

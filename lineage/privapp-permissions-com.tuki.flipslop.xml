@@ -3,7 +3,8 @@
      Privileged permissions FlipSlop may hold as a priv-app. With these the
      cover opens on fold without "Display over other apps", Home on the cover
      returns to FlipSlop without usage access, widgets bind without a dialog
-     and the Bluetooth toggle works in place.
+     and the Bluetooth toggle works in place. Themed icons can follow
+     Wallpaper & style through Trebuchet's settings provider.
 -->
 <permissions>
     <privapp-permissions package="com.tuki.flipslop">
@@ -11,5 +12,7 @@
         <permission name="android.permission.PACKAGE_USAGE_STATS" />
         <permission name="android.permission.BIND_APPWIDGET" />
         <permission name="android.permission.BLUETOOTH_PRIVILEGED" />
+        <!-- Trebuchet's themed-icons switch (Wallpaper & style) -->
+        <permission name="com.android.launcher3.permission.READ_SETTINGS" />
     </privapp-permissions>
 </permissions>

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.tuki.flipslop.data.ThemedIcons
 import com.tuki.flipslop.service.CoverRuntime
 
 /** Collects every runtime flow into one [CoverUiState]. */
@@ -36,6 +37,7 @@ fun rememberCoverUiState(
     val pinned by runtime.apps.pinned.collectAsStateWithLifecycle()
     val all by runtime.apps.all.collectAsStateWithLifecycle()
     val toggles by runtime.toggles.state.collectAsStateWithLifecycle()
+    val systemThemed by runtime.iconTheme.themed.collectAsStateWithLifecycle()
 
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var battery by remember { mutableStateOf<BatteryInfo?>(null) }
@@ -78,6 +80,7 @@ fun rememberCoverUiState(
         edgePaddingDp = edgePaddingDp,
         clockStyle = settings.clockStyle,
         iconShape = settings.iconShape,
+        themedIcons = settings.themedIcons.resolve(systemThemed),
         idleAospClock = settings.idleAospClock,
         mediaArtBackground = settings.mediaArtBackground,
         systemStatusBar = settings.showStatusBar,
@@ -123,4 +126,11 @@ fun HostedWidget(runtime: CoverRuntime, id: Int, modifier: Modifier = Modifier) 
         },
         modifier = modifier,
     )
+}
+
+/** OFF / ON as chosen; SYSTEM takes the launcher's switch (false when unreadable). */
+fun ThemedIcons.resolve(systemThemed: Boolean): Boolean = when (this) {
+    ThemedIcons.OFF -> false
+    ThemedIcons.ON -> true
+    ThemedIcons.SYSTEM -> systemThemed
 }

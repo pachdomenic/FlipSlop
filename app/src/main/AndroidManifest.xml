@@ -31,6 +31,9 @@
     <uses-permission
         android:name="android.permission.BLUETOOTH_PRIVILEGED"
         tools:ignore="ProtectedPermissions" />
+    <!-- Trebuchet / Launcher3 (signatureOrSystem): read the "Themed icons" switch
+         from Wallpaper & style. See apps/SystemIconTheme.kt. -->
+    <uses-permission android:name="com.android.launcher3.permission.READ_SETTINGS" />
 
     <!-- Hinge angle is optional: the app also works on devices without it -->
     <uses-feature

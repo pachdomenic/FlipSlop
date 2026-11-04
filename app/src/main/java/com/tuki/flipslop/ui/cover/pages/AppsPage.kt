@@ -88,6 +88,7 @@ fun AppsPage(state: CoverUiState, actions: CoverActions, modifier: Modifier = Mo
                         pinned = app.key in pinnedKeys,
                         showPinMark = showAll,
                         iconShape = state.iconShape,
+                        themed = state.themedIcons,
                         onClick = { actions.launchApp(app) },
                         onLongClick = { actions.togglePin(app) },
                     )
@@ -104,6 +105,7 @@ private fun AppCell(
     pinned: Boolean,
     showPinMark: Boolean,
     iconShape: IconShapeStyle,
+    themed: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -123,7 +125,7 @@ private fun AppCell(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(contentAlignment = Alignment.TopEnd) {
-            ShapedAppIcon(app.icon, rememberIconShape(index, iconShape), size = 64.dp)
+            ShapedAppIcon(app.icon, rememberIconShape(index, iconShape), size = 64.dp, themed = themed)
             if (showPinMark && pinned) {
                 Icon(
                     Icons.Rounded.PushPin,

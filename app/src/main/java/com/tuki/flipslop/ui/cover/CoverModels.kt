@@ -43,6 +43,8 @@ data class CoverUiState(
     val edgePaddingDp: Int = 16,
     val clockStyle: ClockStyle = ClockStyle.STACKED,
     val iconShape: IconShapeStyle = IconShapeStyle.EXPRESSIVE,
+    /** Resolved: draw themed (monochrome) icons. */
+    val themedIcons: Boolean = false,
     val idleAospClock: Boolean = true,
     val mediaArtBackground: Boolean = true,
     /** The system status bar is showing (it has its own battery icon). */

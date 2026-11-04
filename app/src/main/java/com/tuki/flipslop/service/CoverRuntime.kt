@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.PowerManager
 import com.tuki.flipslop.apps.AppsRepository
+import com.tuki.flipslop.apps.SystemIconTheme
 import com.tuki.flipslop.core.CapabilityState
 import com.tuki.flipslop.core.Capabilities
 import com.tuki.flipslop.data.CoverPrefs
@@ -49,6 +50,7 @@ class CoverRuntime(private val app: Application) {
     val media = MediaRepository(app)
     val apps = AppsRepository(app, prefs, scope)
     val widgets = WidgetRepository(app, prefs)
+    val iconTheme = SystemIconTheme(app)
     val toggles = TogglesController(app, notifications)
     val launcher = CoverLauncher(app, this)
     private val homeWatcher = HomeReturnWatcher(app, this)
@@ -105,7 +107,8 @@ class CoverRuntime(private val app: Application) {
     }
 
     fun refreshCapabilities(): CapabilityState {
-        val caps = Capabilities.read(app, fold.deviceStateAvailable)
+        iconTheme.refresh()
+        val caps = Capabilities.read(app, fold.deviceStateAvailable, iconTheme.readable)
         _capabilities.value = caps
         return caps
     }
