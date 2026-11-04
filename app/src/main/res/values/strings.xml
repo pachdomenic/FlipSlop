@@ -128,6 +128,8 @@
     <string name="pref_page_bar_always">Always show the page bar</string>
     <string name="pref_page_bar_always_desc">Otherwise it hides; tap the page dots next to the cameras to bring it out</string>
     <string name="show_pages">Show pages</string>
+    <string name="pref_page_dots">Page dots</string>
+    <string name="pref_page_dots_desc">Off hides page navigation completely; swipe left and right to switch pages</string>
     <string name="pref_dock_notifications">Notification icons</string>
     <string name="pref_dock_notifications_desc">Icons of apps with notifications, tap to open them</string>
     <string name="pref_dock_media">Now playing</string>

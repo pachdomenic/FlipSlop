@@ -18,6 +18,8 @@ data class DockConfig(
     val cameraWidthDp: Int = 0,
     /** Keep the page bar out instead of hiding it behind page dots. */
     val pageBarAlways: Boolean = false,
+    /** Page dots (which also bring out the page bar); off = swipe only. */
+    val showPageDots: Boolean = true,
     val notifications: Boolean = true,
     val media: Boolean = true,
 )

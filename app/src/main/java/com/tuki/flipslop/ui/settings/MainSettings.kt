@@ -18,6 +18,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.NotificationsActive
@@ -136,6 +137,13 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                 switchRow(Icons.Rounded.ViewCarousel, R.string.pref_page_bar_always, R.string.pref_page_bar_always_desc, settings.pageBarAlways) {
                     scope.launch { prefs.setPageBarAlways(it) }
                 },
+                switchRow(
+                    Icons.Rounded.MoreHoriz,
+                    R.string.pref_page_dots,
+                    R.string.pref_page_dots_desc,
+                    settings.showPageDots && !settings.pageBarAlways,
+                    enabled = !settings.pageBarAlways,
+                ) { scope.launch { prefs.setShowPageDots(it) } },
                 switchRow(Icons.Rounded.Notifications, R.string.pref_dock_notifications, R.string.pref_dock_notifications_desc, settings.dockNotifications) {
                     scope.launch { prefs.setDockNotifications(it) }
                 },

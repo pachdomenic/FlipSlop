@@ -82,6 +82,7 @@ fun rememberCoverUiState(
             cameraSide = settings.cameraSide,
             cameraWidthDp = settings.cameraWidthDp,
             pageBarAlways = settings.pageBarAlways,
+            showPageDots = settings.showPageDots,
             notifications = settings.dockNotifications,
             media = settings.dockMedia,
         ),

@@ -85,10 +85,11 @@ fun CoverScreen(
     }
 
     // Height of the dock column; the pager keeps clear of it and of the camera block.
+    val showDots = !dock.pageBarAlways && dock.showPageDots
     val dockRows = listOfNotNull(
         DockMetrics.MediaHeight.takeIf { dockMedia },
         DockMetrics.NotificationsHeight.takeIf { dockNotifications },
-        DockMetrics.DotsHeight.takeIf { !dock.pageBarAlways },
+        DockMetrics.DotsHeight.takeIf { showDots },
     )
     val dockHeight = if (dockRows.isEmpty()) {
         0.dp
@@ -185,7 +186,7 @@ fun CoverScreen(
                     if (dockNotifications) {
                         DockNotifications(state, onClick = { goTo(CoverPage.NOTIFICATIONS) })
                     }
-                    if (!dock.pageBarAlways) {
+                    if (showDots) {
                         PageDots(
                             pages = pages.size,
                             current = pager.currentPage,
