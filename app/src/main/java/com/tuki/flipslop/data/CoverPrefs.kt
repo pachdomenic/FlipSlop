@@ -19,13 +19,23 @@ private val Context.coverDataStore: DataStore<Preferences> by preferencesDataSto
 
 enum class CoverPage { HOME, NOTIFICATIONS, MEDIA, APPS, WIDGETS, TOGGLES }
 
+/** Notifications sit left of Home, so a swipe right from the clock shows them. */
+val DefaultPages = listOf(
+    CoverPage.NOTIFICATIONS,
+    CoverPage.HOME,
+    CoverPage.MEDIA,
+    CoverPage.APPS,
+    CoverPage.WIDGETS,
+    CoverPage.TOGGLES,
+)
+
 enum class ClockStyle { STACKED, INLINE }
 
 data class CoverSettings(
     val autoShowOnFold: Boolean = true,
     val showOnWake: Boolean = true,
     val returnAfterHome: Boolean = true,
-    val pages: List<CoverPage> = CoverPage.entries,
+    val pages: List<CoverPage> = DefaultPages,
     val pinnedApps: List<String> = emptyList(),
     val pinsInitialized: Boolean = false,
     val widgetIds: List<Int> = emptyList(),
@@ -41,7 +51,7 @@ class CoverPrefs(context: Context) {
             autoShowOnFold = p[AUTO_SHOW] ?: true,
             showOnWake = p[SHOW_ON_WAKE] ?: true,
             returnAfterHome = p[RETURN_AFTER_HOME] ?: true,
-            pages = p[PAGES]?.let(::decodePages) ?: CoverPage.entries,
+            pages = p[PAGES]?.let(::decodePages) ?: DefaultPages,
             pinnedApps = p[PINNED]?.split(LIST_SEP)?.filter { it.isNotBlank() } ?: emptyList(),
             pinsInitialized = p[PINS_INIT] ?: false,
             widgetIds = p[WIDGETS]?.split(LIST_SEP)?.mapNotNull { it.toIntOrNull() } ?: emptyList(),

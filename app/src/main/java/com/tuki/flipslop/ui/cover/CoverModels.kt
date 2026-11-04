@@ -3,6 +3,7 @@ package com.tuki.flipslop.ui.cover
 import com.tuki.flipslop.apps.AppEntry
 import com.tuki.flipslop.data.ClockStyle
 import com.tuki.flipslop.data.CoverPage
+import com.tuki.flipslop.data.DefaultPages
 import com.tuki.flipslop.media.MediaState
 import com.tuki.flipslop.notifications.CoverAction
 import com.tuki.flipslop.notifications.CoverNotification
@@ -22,7 +23,7 @@ data class CoverUiState(
     val allApps: List<AppEntry> = emptyList(),
     val widgetIds: List<Int> = emptyList(),
     val toggles: ToggleStates = ToggleStates(),
-    val pages: List<CoverPage> = CoverPage.entries,
+    val pages: List<CoverPage> = DefaultPages,
     val bottomInsetDp: Int = 0,
     /** Padding that keeps content clear of the panel's rounded corners. */
     val edgePaddingDp: Int = 16,
