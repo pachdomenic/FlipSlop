@@ -22,6 +22,7 @@ android {
         applicationId = "com.tuki.flipslop"
         minSdk = 35
         targetSdk = 36
+        // Keep in sync with --version-code / --version-name in Android.bp.
         versionCode = 1
         versionName = "0.1.0"
     }
@@ -53,7 +54,8 @@ android {
 
     buildFeatures {
         compose = true
-        buildConfig = true
+        // Not used: lineage/ builds the same sources with Soong, which has no BuildConfig.
+        buildConfig = false
     }
 
     testOptions {
@@ -76,6 +78,9 @@ android {
 
 kotlin {
     compilerOptions {
+        // AOSP 16 QPR2 builds with kotlinc 2.2.0: no newer language features.
+        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
         optIn.addAll(
             "androidx.compose.material3.ExperimentalMaterial3Api",
             "androidx.compose.material3.ExperimentalMaterial3ExpressiveApi",
@@ -92,7 +97,6 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.window)
 
-    implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
     implementation(libs.compose.foundation)
@@ -106,7 +110,6 @@ dependencies {
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.androidx.test.core)
-    testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
 }
