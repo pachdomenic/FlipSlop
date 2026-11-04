@@ -38,6 +38,10 @@ import com.tuki.flipslop.data.HourFormat
 import com.tuki.flipslop.data.HomeStyle
 import com.tuki.flipslop.data.NotificationStyle
 import com.tuki.flipslop.data.IconShapeStyle
+import com.tuki.flipslop.data.LockConfig
+import com.tuki.flipslop.data.LockLayout
+import com.tuki.flipslop.data.LockNotifications
+import com.tuki.flipslop.data.UnlockGesture
 import com.tuki.flipslop.media.MediaState
 import com.tuki.flipslop.notifications.CoverAction
 import com.tuki.flipslop.notifications.CoverNotification
@@ -102,7 +106,18 @@ class CoverScreenshotTest {
     }
     @Test fun locked() = shoot(CoverPage.HOME, name = "locked") { it.copy(locked = true) }
     @Test fun lockedNotifications() = shoot(CoverPage.HOME, name = "locked_notifications") {
-        it.copy(locked = true, lockNotifications = true, media = null)
+        it.copy(locked = true, lock = LockConfig(notifications = LockNotifications.CARDS), media = null)
+    }
+    @Test fun lockedBigClock() = shoot(CoverPage.HOME, name = "locked_big") {
+        it.copy(
+            locked = true,
+            lock = LockConfig(
+                layout = LockLayout.BIG_CLOCK,
+                notifications = LockNotifications.ICONS,
+                tabs = setOf(CoverPage.NOTIFICATIONS, CoverPage.MEDIA),
+                gesture = UnlockGesture.DOUBLE_TAP,
+            ),
+        )
     }
     @Test fun lockedIdle() = shoot(CoverPage.HOME, name = "locked_idle") { it.copy(locked = true, media = null) }
     @Test fun appsCircle() = shoot(CoverPage.APPS, name = "apps_circle") { it.copy(iconShape = IconShapeStyle.CIRCLE) }

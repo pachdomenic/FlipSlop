@@ -4,6 +4,7 @@ import com.tuki.flipslop.apps.AppEntry
 import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.data.ClockConfig
 import com.tuki.flipslop.data.HomeStyle
+import com.tuki.flipslop.data.LockConfig
 import com.tuki.flipslop.data.NotificationStyle
 import com.tuki.flipslop.data.IconShapeStyle
 import com.tuki.flipslop.data.CoverPage
@@ -33,9 +34,8 @@ data class CoverUiState(
     val is24h: Boolean = true,
     val battery: BatteryInfo? = null,
     val locked: Boolean = false,
-    /** Show the simple lock screen while [locked]. */
-    val lockMinimal: Boolean = true,
-    val lockNotifications: Boolean = false,
+    /** The lock screen shown while [locked]. */
+    val lock: LockConfig = LockConfig(),
     /** The system's lock screen notification switches. */
     val lockPolicy: LockScreenPolicy = LockScreenPolicy(),
     val notifications: List<CoverNotification> = emptyList(),

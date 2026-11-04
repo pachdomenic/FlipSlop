@@ -84,6 +84,8 @@ internal fun CardsLayout(
     modifier: Modifier = Modifier,
     moreCount: Int = 0,
     onMore: (() -> Unit)? = null,
+    /** Something small between the clock and the cards (the lock screen's notification icons). */
+    belowClock: (@Composable () -> Unit)? = null,
 ) {
     // The cover is short: with the player out, one notification card leaves the clock room.
     val room = if (state.media != null) 1 else MAX_CARD_NOTIFICATIONS
@@ -93,6 +95,9 @@ internal fun CardsLayout(
         CardsDate(state)
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             CardsClock(state, stacked = maxHeight >= 200.dp, available = maxHeight.value)
+        }
+        if (belowClock != null) {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { belowClock() }
         }
         shown.forEach { line ->
             Spacer(Modifier.height(6.dp))

@@ -81,9 +81,21 @@ fun CoverScreen(
     val scope = rememberCoroutineScope()
     val home = pages.indexOf(CoverPage.HOME).coerceAtLeast(0)
 
+    val lockView = state.locked && state.lock.enabled
+    val lockPages = remember(state.lock, pages) { state.lock.pages(pages) }
+    val lockPager = rememberPagerState(initialPage = lockPages.indexOf(CoverPage.HOME).coerceAtLeast(0)) { lockPages.size }
+
     // Back on the cover returns to the home pane instead of leaving the launcher.
-    BackHandler(enabled = pager.currentPage != home) {
+    BackHandler(enabled = !lockView && pager.currentPage != home) {
         scope.launch { pager.animateScrollToPage(home) }
+    }
+    val lockHome = lockPages.indexOf(CoverPage.HOME).coerceAtLeast(0)
+    BackHandler(enabled = lockView && lockPager.currentPage != lockHome) {
+        scope.launch { lockPager.animateScrollToPage(lockHome) }
+    }
+    // Every time the device locks, start again from the clock.
+    LaunchedEffect(lockView) {
+        if (lockView) lockPager.scrollToPage(lockHome)
     }
 
     val edge = state.edgePaddingDp.dp
@@ -129,11 +141,14 @@ fun CoverScreen(
         BoxWithConstraints(modifier.fillMaxSize()) {
             // Album art behind everything, fading in as the media page comes into view.
             val art = state.media?.art
-            val mediaIndex = pages.indexOf(CoverPage.MEDIA)
-            val artVisibility by remember(mediaIndex) {
+            // Locked, the pages to swipe through are the lock screen's own.
+            val shownPages = if (lockView) lockPages else pages
+            val shownPager = if (lockView) lockPager else pager
+            val mediaIndex = shownPages.indexOf(CoverPage.MEDIA)
+            val artVisibility by remember(mediaIndex, shownPager) {
                 derivedStateOf {
                     if (mediaIndex < 0) 0f
-                    else 1f - min(1f, abs(pager.currentPage + pager.currentPageOffsetFraction - mediaIndex))
+                    else 1f - min(1f, abs(shownPager.currentPage + shownPager.currentPageOffsetFraction - mediaIndex))
                 }
             }
             if (state.mediaArtBackground && art != null && mediaIndex >= 0) {
@@ -163,12 +178,13 @@ fun CoverScreen(
             val cameraWidth = dock.cameraWidthDp.dp.coerceIn(0.dp, maxOf(0.dp, maxWidth - MinDockWidth))
             val cameraLeft = dock.cameraSide == CameraSide.LEFT
 
-            val lockView = state.locked && state.lockMinimal
             if (lockView) {
                 val stripAlign = if (cameraLeft) Alignment.BottomEnd else Alignment.BottomStart
                 LockScreen(
                     state = state,
                     actions = actions,
+                    pages = lockPages,
+                    pager = lockPager,
                     contentModifier = Modifier
                         .fillMaxSize()
                         .padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = maxOf(bottom, 56.dp) + 8.dp),

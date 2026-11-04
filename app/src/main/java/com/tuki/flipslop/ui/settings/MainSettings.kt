@@ -14,6 +14,17 @@ import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material3.FilterChip
 import androidx.compose.ui.graphics.Color
+import com.tuki.flipslop.data.CoverPage
+import com.tuki.flipslop.data.LockConfig
+import com.tuki.flipslop.data.LockLayout
+import com.tuki.flipslop.data.LockNotifications
+import com.tuki.flipslop.data.LockTabCandidates
+import com.tuki.flipslop.data.UnlockGesture
+import com.tuki.flipslop.ui.cover.icon
+import com.tuki.flipslop.ui.cover.labelRes
+import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.material.icons.rounded.TouchApp
+import androidx.compose.material.icons.rounded.ViewAgenda
 import com.tuki.flipslop.data.ClockAlign
 import com.tuki.flipslop.data.ClockColor
 import com.tuki.flipslop.data.ClockConfig
@@ -174,18 +185,7 @@ fun CategorySettings(
             ) { scope.launch { prefs.setReturnAfterHome(it) } },
         )
 
-        Route.LOCK -> rows(
-            switchRow(Icons.Rounded.Lock, R.string.pref_lock_minimal, R.string.pref_lock_minimal_desc, settings.lockMinimal) {
-                scope.launch { prefs.setLockMinimal(it) }
-            },
-            switchRow(
-                Icons.Rounded.Notifications,
-                R.string.pref_lock_notifications,
-                R.string.pref_lock_notifications_desc,
-                settings.lockNotifications,
-                enabled = settings.lockMinimal,
-            ) { scope.launch { prefs.setLockNotifications(it) } },
-        )
+        Route.LOCK -> lockRows(settings.lock, prefs, scope, navigate)
 
         Route.COVER -> rows(
             navRow(Icons.Rounded.ViewCarousel, R.string.pref_pages, R.string.pref_pages_desc) { navigate(Route.PAGES) },
@@ -353,6 +353,9 @@ fun CategorySettings(
         // The camera screen shows the cover preview, so the sliders have something to move.
         if (route == Route.CAMERA || route == Route.STYLE) {
             item(key = "preview") { CoverPreview(runtime) }
+        }
+        if (route == Route.LOCK) {
+            item(key = "preview") { CoverPreview(runtime) { it.copy(locked = true) } }
         }
         if (route == Route.CLOCK) {
             // Show the big clock whatever Home is set to, so every change is visible.
@@ -541,6 +544,108 @@ private fun navRow(icon: ImageVector, title: Int, desc: Int, onClick: () -> Unit
         trailingContent = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null) },
     ) { Text(stringResource(title)) }
 }
+
+/** Everything on the Lock screen screen. */
+private fun lockRows(
+    lock: LockConfig,
+    prefs: CoverPrefs,
+    scope: CoroutineScope,
+    navigate: (Route) -> Unit,
+): List<@Composable (Shape) -> Unit> = rows(
+    switchRow(Icons.Rounded.Lock, R.string.pref_lock_minimal, R.string.pref_lock_minimal_desc, lock.enabled) {
+        scope.launch { prefs.setLockEnabled(it) }
+    },
+    { shapes ->
+        ChoiceRow(
+            title = R.string.pref_lock_layout,
+            icon = Icons.Rounded.ViewAgenda,
+            options = LockLayout.entries,
+            selected = lock.layout,
+            label = { stringResource(if (it == LockLayout.CARDS) R.string.lock_layout_cards else R.string.lock_layout_big) },
+            shapes = shapes,
+        ) { l -> scope.launch { prefs.setLockLayout(l) } }
+    },
+    navRow(Icons.Rounded.AccessTime, R.string.pref_clock, R.string.pref_lock_clock_desc) { navigate(Route.CLOCK) },
+    { shapes ->
+        ChoiceRow(
+            title = R.string.pref_lock_notifications,
+            icon = Icons.Rounded.Notifications,
+            options = LockNotifications.entries,
+            selected = lock.notifications,
+            label = { stringResource(it.labelRes) },
+            shapes = shapes,
+            footer = stringResource(R.string.pref_lock_notifications_desc),
+        ) { n -> scope.launch { prefs.setLockNotifications(n) } }
+    },
+    switchRow(Icons.Rounded.MusicNote, R.string.pref_lock_media, R.string.pref_lock_media_desc, lock.media) {
+        scope.launch { prefs.setLockMedia(it) }
+    },
+    { shapes -> LockTabsRow(lock, shapes) { page, shown -> scope.launch { prefs.setLockTab(page, shown) } } },
+    { shapes ->
+        ChoiceRow(
+            title = R.string.pref_unlock_gesture,
+            icon = Icons.Rounded.TouchApp,
+            options = UnlockGesture.entries,
+            selected = lock.gesture,
+            label = { stringResource(it.labelRes) },
+            shapes = shapes,
+            content = { Text(stringResource(it.shortLabelRes), maxLines = 1) },
+        ) { g -> scope.launch { prefs.setUnlockGesture(g) } }
+    },
+    switchRow(Icons.Rounded.Lightbulb, R.string.pref_lock_hint, R.string.pref_lock_hint_desc, lock.hint) {
+        scope.launch { prefs.setLockHint(it) }
+    },
+)
+
+/** The pages that may be swiped to while locked, as chips. */
+@Composable
+private fun LockTabsRow(lock: LockConfig, shapes: Shape, onChange: (CoverPage, Boolean) -> Unit) {
+    SettingsItem(
+        onClick = {},
+        shapes = shapes,
+        leadingContent = { Icon(Icons.Rounded.ViewCarousel, contentDescription = null) },
+        supportingContent = {
+            Column {
+                Text(stringResource(R.string.pref_lock_tabs_desc))
+                FlowRow(
+                    Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    LockTabCandidates.forEach { page ->
+                        val selected = page in lock.tabs
+                        FilterChip(
+                            selected = selected,
+                            onClick = { onChange(page, !selected) },
+                            label = { Text(stringResource(page.labelRes)) },
+                            leadingIcon = { Icon(page.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        )
+                    }
+                }
+            }
+        },
+    ) { Text(stringResource(R.string.pref_lock_tabs)) }
+}
+
+private val LockNotifications.labelRes: Int
+    get() = when (this) {
+        LockNotifications.HIDDEN -> R.string.lock_notifications_hidden
+        LockNotifications.ICONS -> R.string.lock_notifications_icons
+        LockNotifications.CARDS -> R.string.lock_notifications_cards
+    }
+
+private val UnlockGesture.labelRes: Int
+    get() = when (this) {
+        UnlockGesture.TAP_OR_SWIPE -> R.string.unlock_gesture_tap
+        UnlockGesture.SWIPE -> R.string.unlock_gesture_swipe
+        UnlockGesture.DOUBLE_TAP -> R.string.unlock_gesture_double_tap
+    }
+
+private val UnlockGesture.shortLabelRes: Int
+    get() = when (this) {
+        UnlockGesture.TAP_OR_SWIPE -> R.string.unlock_gesture_tap_short
+        UnlockGesture.SWIPE -> R.string.unlock_gesture_swipe_short
+        UnlockGesture.DOUBLE_TAP -> R.string.unlock_gesture_double_tap_short
+    }
 
 /** Everything on the Clock screen. */
 @Composable
