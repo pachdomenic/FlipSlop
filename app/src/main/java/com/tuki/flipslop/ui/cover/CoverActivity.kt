@@ -44,6 +44,9 @@ import com.tuki.flipslop.notifications.CoverNotification
 import com.tuki.flipslop.notifications.CoverNotificationListener
 import com.tuki.flipslop.ui.settings.SettingsActivity
 import com.tuki.flipslop.ui.theme.FlipSlopTheme
+import com.tuki.flipslop.data.FingerprintUnlock
+import com.tuki.flipslop.unlock.FingerprintPrompt
+import com.tuki.flipslop.unlock.TrustUnlock
 import com.tuki.flipslop.widgets.WidgetAdder
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -62,6 +65,13 @@ class CoverActivity : ComponentActivity() {
     private var edgePadding by mutableIntStateOf(16)
     private var pickingWidget by mutableStateOf(false)
     private lateinit var widgetAdder: WidgetAdder
+    private val fingerprint by lazy { FingerprintPrompt(this) }
+
+    /** What to run once the keyguard is gone (opening a notification, an app...). */
+    private var afterUnlock: (() -> Unit)? = null
+
+    /** The fingerprint prompt already came up on its own since the screen turned on. */
+    private var autoPrompted = false
 
     /** Opened from settings for a preview on the inner screen: do not auto-close. */
     private var stay = false
@@ -158,9 +168,19 @@ class CoverActivity : ComponentActivity() {
     private val keyguardReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
-                Intent.ACTION_USER_PRESENT -> locked = false
+                Intent.ACTION_USER_PRESENT -> {
+                    locked = false
+                    runAfterUnlock()
+                }
                 else -> {
+                    if (intent.action == Intent.ACTION_SCREEN_OFF) {
+                        autoPrompted = false
+                        fingerprint.dismiss()
+                    }
                     refreshLocked()
+                    if (intent.action == Intent.ACTION_SCREEN_ON) {
+                        window.decorView.postDelayed(::maybeAutoPrompt, AUTO_PROMPT_DELAY_MS)
+                    }
                     // The keyguard may engage a moment after the screen goes off.
                     window.decorView.postDelayed(::refreshLocked, KEYGUARD_SETTLE_MS)
                 }
@@ -195,6 +215,8 @@ class CoverActivity : ComponentActivity() {
         refreshLocked()
         runtime.refreshCapabilities()
         runtime.toggles.refresh()
+        // Give the window a moment to come up before the prompt goes over it.
+        window.decorView.postDelayed(::maybeAutoPrompt, AUTO_PROMPT_DELAY_MS)
     }
 
     override fun onPause() {
@@ -203,6 +225,9 @@ class CoverActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        // Stopped when the screen goes off (or something covers us): prompt again next time.
+        autoPrompted = false
+        fingerprint.dismiss()
         runCatching { unregisterReceiver(keyguardReceiver) }
         runtime.toggles.stop()
         runtime.widgets.stopListening()
@@ -239,19 +264,71 @@ class CoverActivity : ComponentActivity() {
         return ((px / d).roundToInt() + 8).coerceAtLeast(16)
     }
 
-    /** Runs [block] now, or after the user unlocks on the cover. */
+    /**
+     * Runs [block] now, or after the user unlocks on the cover: with a
+     * fingerprint when the trust agent can unlock (see unlock/), otherwise
+     * through the system bouncer.
+     */
     private fun unlocked(block: () -> Unit) {
-        val km = getSystemService(KeyguardManager::class.java)
-        if (!km.isKeyguardLocked) {
+        if (!getSystemService(KeyguardManager::class.java).isKeyguardLocked) {
             block()
             return
         }
-        km.requestDismissKeyguard(this, object : KeyguardManager.KeyguardDismissCallback() {
-            override fun onDismissSucceeded() {
-                locked = false
-                block()
-            }
-        })
+        afterUnlock = block
+        if (fingerprintUsable()) {
+            fingerprint.show(onSuccess = ::onFingerprint, onUseCredential = ::showBouncer)
+        } else {
+            showBouncer()
+        }
+    }
+
+    private fun fingerprintUsable(): Boolean {
+        val lock = runtime.settings.value.lock
+        return lock.enabled && lock.fingerprint != FingerprintUnlock.OFF && TrustUnlock.ready && fingerprint.available()
+    }
+
+    /** "Right away": the prompt comes up by itself once per screen-on while locked. */
+    private fun maybeAutoPrompt() {
+        val lock = runtime.settings.value.lock
+        if (autoPrompted || !locked || stay || fingerprint.showing) return
+        if (lock.fingerprint != FingerprintUnlock.IMMEDIATE || !runtime.interactive.value) return
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) || !fingerprintUsable()) return
+        autoPrompted = true
+        fingerprint.show(onSuccess = ::onFingerprint, onUseCredential = ::showBouncer)
+    }
+
+    /** The system accepted a strong biometric: have the trust agent let the keyguard go. */
+    private fun onFingerprint() {
+        if (!TrustUnlock.unlock()) {
+            showBouncer()
+            return
+        }
+        // Unlocked: ACTION_USER_PRESENT follows. If Android refused the grant, fall back.
+        window.decorView.postDelayed({
+            if (getSystemService(KeyguardManager::class.java).isKeyguardLocked) showBouncer()
+        }, TRUST_SETTLE_MS)
+    }
+
+    private fun showBouncer() {
+        getSystemService(KeyguardManager::class.java).requestDismissKeyguard(
+            this,
+            object : KeyguardManager.KeyguardDismissCallback() {
+                override fun onDismissSucceeded() {
+                    locked = false
+                    runAfterUnlock()
+                }
+
+                override fun onDismissCancelled() {
+                    afterUnlock = null
+                }
+            },
+        )
+    }
+
+    private fun runAfterUnlock() {
+        val block = afterUnlock ?: return
+        afterUnlock = null
+        block()
     }
 
     private fun startOnCover(intent: Intent) {
@@ -349,6 +426,8 @@ class CoverActivity : ComponentActivity() {
         const val EXTRA_REASON = "com.tuki.flipslop.extra.REASON"
         const val EXTRA_STAY = "com.tuki.flipslop.extra.STAY"
         private const val KEYGUARD_SETTLE_MS = 1_000L
+        private const val AUTO_PROMPT_DELAY_MS = 300L
+        private const val TRUST_SETTLE_MS = 1_500L
     }
 }
 

@@ -14,7 +14,12 @@ import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material3.FilterChip
 import androidx.compose.ui.graphics.Color
+import android.hardware.biometrics.BiometricManager
+import androidx.compose.material.icons.rounded.Fingerprint
 import com.tuki.flipslop.data.CoverPage
+import com.tuki.flipslop.data.FingerprintUnlock
+import com.tuki.flipslop.unlock.TrustStatus
+import com.tuki.flipslop.unlock.TrustUnlock
 import com.tuki.flipslop.data.LockConfig
 import com.tuki.flipslop.data.LockLayout
 import com.tuki.flipslop.data.LockNotifications
@@ -185,7 +190,7 @@ fun CategorySettings(
             ) { scope.launch { prefs.setReturnAfterHome(it) } },
         )
 
-        Route.LOCK -> lockRows(settings.lock, prefs, scope, navigate)
+        Route.LOCK -> lockRows(settings.lock, caps, prefs, scope, navigate)
 
         Route.COVER -> rows(
             navRow(Icons.Rounded.ViewCarousel, R.string.pref_pages, R.string.pref_pages_desc) { navigate(Route.PAGES) },
@@ -548,6 +553,7 @@ private fun navRow(icon: ImageVector, title: Int, desc: Int, onClick: () -> Unit
 /** Everything on the Lock screen screen. */
 private fun lockRows(
     lock: LockConfig,
+    caps: CapabilityState,
     prefs: CoverPrefs,
     scope: CoroutineScope,
     navigate: (Route) -> Unit,
@@ -592,6 +598,34 @@ private fun lockRows(
             content = { Text(stringResource(it.shortLabelRes), maxLines = 1) },
         ) { g -> scope.launch { prefs.setUnlockGesture(g) } }
     },
+    { shapes ->
+        val trust by TrustUnlock.status.collectAsStateWithLifecycle()
+        val context = LocalContext.current
+        val biometric = remember {
+            context.getSystemService(BiometricManager::class.java)
+                ?.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+        }
+        ChoiceRow(
+            title = R.string.pref_fingerprint,
+            icon = Icons.Rounded.Fingerprint,
+            options = FingerprintUnlock.entries,
+            selected = lock.fingerprint,
+            label = { stringResource(it.labelRes) },
+            shapes = shapes,
+            content = { Text(stringResource(it.shortLabelRes), maxLines = 1) },
+            footer = stringResource(
+                when {
+                    lock.fingerprint == FingerprintUnlock.OFF -> R.string.fingerprint_off_desc
+                    !caps.trustAgent -> R.string.fingerprint_needs_system
+                    !biometric -> R.string.fingerprint_no_biometric
+                    !lock.enabled -> R.string.fingerprint_needs_lock_screen
+                    trust == TrustStatus.NOT_CONNECTED -> R.string.fingerprint_agent_off
+                    trust == TrustStatus.READY -> R.string.fingerprint_ready
+                    else -> R.string.fingerprint_waiting
+                },
+            ),
+        ) { f -> scope.launch { prefs.setFingerprintUnlock(f) } }
+    },
     switchRow(Icons.Rounded.Lightbulb, R.string.pref_lock_hint, R.string.pref_lock_hint_desc, lock.hint) {
         scope.launch { prefs.setLockHint(it) }
     },
@@ -625,6 +659,20 @@ private fun LockTabsRow(lock: LockConfig, shapes: Shape, onChange: (CoverPage, B
         },
     ) { Text(stringResource(R.string.pref_lock_tabs)) }
 }
+
+private val FingerprintUnlock.labelRes: Int
+    get() = when (this) {
+        FingerprintUnlock.OFF -> R.string.fingerprint_mode_off
+        FingerprintUnlock.ON_GESTURE -> R.string.fingerprint_mode_gesture
+        FingerprintUnlock.IMMEDIATE -> R.string.fingerprint_mode_immediate
+    }
+
+private val FingerprintUnlock.shortLabelRes: Int
+    get() = when (this) {
+        FingerprintUnlock.OFF -> R.string.fingerprint_mode_off
+        FingerprintUnlock.ON_GESTURE -> R.string.fingerprint_mode_gesture_short
+        FingerprintUnlock.IMMEDIATE -> R.string.fingerprint_mode_immediate_short
+    }
 
 private val LockNotifications.labelRes: Int
     get() = when (this) {

@@ -33,6 +33,8 @@ data class CapabilityState(
     val deviceStateApi: Boolean = false,
     /** The launcher's themed-icons switch is readable (priv-app build). */
     val systemIconTheme: Boolean = false,
+    /** Privileged PROVIDE_TRUST_AGENT: fingerprint unlock from the cover lock screen. */
+    val trustAgent: Boolean = false,
     val isSystemApp: Boolean = false,
 ) {
     val tier: Tier
@@ -62,6 +64,7 @@ object Capabilities {
             bindWidgets = granted(context, Manifest.permission.BIND_APPWIDGET),
             deviceStateApi = deviceStateApi,
             systemIconTheme = systemIconTheme,
+            trustAgent = granted(context, PERMISSION_PROVIDE_TRUST_AGENT),
             isSystemApp = (context.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
         )
     }
@@ -87,4 +90,5 @@ object Capabilities {
 
 
     const val PERMISSION_BACKGROUND_STARTS = "android.permission.START_ACTIVITIES_FROM_BACKGROUND"
+    const val PERMISSION_PROVIDE_TRUST_AGENT = "android.permission.PROVIDE_TRUST_AGENT"
 }

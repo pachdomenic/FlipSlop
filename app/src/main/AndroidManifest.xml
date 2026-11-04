@@ -34,6 +34,12 @@
     <!-- Trebuchet / Launcher3 (signatureOrSystem): read the "Themed icons" switch
          from Wallpaper & style. See apps/SystemIconTheme.kt. -->
     <uses-permission android:name="com.android.launcher3.permission.READ_SETTINGS" />
+    <!-- Fingerprint on the cover lock screen: the system prompt checks it and
+         FlipSlop's trust agent (privileged) lets the keyguard go. See unlock/. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission
+        android:name="android.permission.PROVIDE_TRUST_AGENT"
+        tools:ignore="ProtectedPermissions" />
 
     <!-- Hinge angle is optional: the app also works on devices without it -->
     <uses-feature
@@ -137,6 +143,20 @@
             <meta-data
                 android:name="android.service.quicksettings.TOGGLEABLE_TILE"
                 android:value="true" />
+        </service>
+
+        <!-- Only bound by the system when PROVIDE_TRUST_AGENT is granted -->
+        <service
+            android:name=".unlock.CoverTrustAgent"
+            android:exported="true"
+            android:label="@string/trust_agent_label"
+            android:permission="android.permission.BIND_TRUST_AGENT">
+            <intent-filter>
+                <action android:name="android.service.trust.TrustAgentService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.trust.trustagent"
+                android:resource="@xml/trust_agent" />
         </service>
 
         <receiver

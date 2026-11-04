@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.NotificationsNone
 import androidx.compose.material.icons.rounded.NotificationsOff
@@ -200,7 +201,7 @@ private fun UnlockHint(state: CoverUiState, onClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
-            Icons.Rounded.Lock,
+            if (state.fingerprintUnlock) Icons.Rounded.Fingerprint else Icons.Rounded.Lock,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primaryFixed,
             modifier = Modifier.size(22.dp),

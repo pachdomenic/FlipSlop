@@ -36,6 +36,8 @@ data class CoverUiState(
     val locked: Boolean = false,
     /** The lock screen shown while [locked]. */
     val lock: LockConfig = LockConfig(),
+    /** A fingerprint on the cover can unlock right now (trust agent armed). */
+    val fingerprintUnlock: Boolean = false,
     /** The system's lock screen notification switches. */
     val lockPolicy: LockScreenPolicy = LockScreenPolicy(),
     val notifications: List<CoverNotification> = emptyList(),

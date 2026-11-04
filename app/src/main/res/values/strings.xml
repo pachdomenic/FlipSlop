@@ -89,7 +89,7 @@
     <string name="section_lock">Lock screen</string>
     <string name="cat_access_desc" tools:ignore="PluralsCandidate">%1$d of %2$d allowed</string>
     <string name="cat_behaviour_desc">When the cover launcher shows up</string>
-    <string name="cat_lock_desc">Layout, notifications, pages and unlocking</string>
+    <string name="cat_lock_desc">Layout, notifications, pages, fingerprint</string>
     <string name="cat_cover_desc">Pages, apps, widgets, Home and notifications layout</string>
     <string name="cat_style_desc">Icons, clock, album art, blur</string>
     <string name="cat_camera_desc">Dock, page bar and the camera block</string>
@@ -141,6 +141,25 @@
     <string name="unlock_gesture_swipe_short">Swipe</string>
     <string name="unlock_gesture_double_tap">Double-tap or swipe up</string>
     <string name="unlock_gesture_double_tap_short">Double-tap</string>
+    <string name="pref_fingerprint">Fingerprint</string>
+    <string name="fingerprint_mode_off">Off</string>
+    <string name="fingerprint_mode_gesture">With the unlock gesture</string>
+    <string name="fingerprint_mode_gesture_short">Gesture</string>
+    <string name="fingerprint_mode_immediate">As soon as the cover wakes</string>
+    <string name="fingerprint_mode_immediate_short">Right away</string>
+    <string name="fingerprint_off_desc">The gesture brings up the system lock screen, which takes your fingerprint itself</string>
+    <string name="fingerprint_needs_system">Needs FlipSlop built into the ROM (lineage/): only a system trust agent may unlock Android</string>
+    <string name="fingerprint_no_biometric">Add a fingerprint in Android settings first</string>
+    <string name="fingerprint_needs_lock_screen">Works with the cover lock screen turned on</string>
+    <string name="fingerprint_agent_off">Turn on \"FlipSlop cover unlock\" under Settings › Security › Trust agents</string>
+    <string name="fingerprint_waiting">Starts working after the next unlock with your PIN or fingerprint on the system lock screen. After a reboot, 24 hours without the PIN or 8 hours idle Android asks for the PIN again</string>
+    <string name="fingerprint_ready">Ready: touch the sensor on the cover lock screen to unlock</string>
+    <string name="fingerprint_prompt_title">Unlock</string>
+    <string name="fingerprint_prompt_subtitle">Touch the fingerprint sensor</string>
+    <string name="fingerprint_use_pin">Use PIN</string>
+    <string name="trust_agent_label">FlipSlop cover unlock</string>
+    <string name="trust_agent_summary">Lets a fingerprint on the cover lock screen unlock the phone</string>
+    <string name="trust_agent_message">Unlocked from the cover</string>
     <string name="pref_lock_hint">Unlock hint</string>
     <string name="pref_lock_hint_desc">The lock and how to unlock, beside the cameras</string>
     <string name="pref_return_home">Home returns to the cover</string>

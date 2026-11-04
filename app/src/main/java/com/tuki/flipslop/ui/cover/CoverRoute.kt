@@ -18,7 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.tuki.flipslop.data.FingerprintUnlock
 import com.tuki.flipslop.data.ThemedIcons
+import com.tuki.flipslop.unlock.TrustStatus
+import com.tuki.flipslop.unlock.TrustUnlock
 import com.tuki.flipslop.service.CoverRuntime
 
 /** Collects every runtime flow into one [CoverUiState]. */
@@ -38,6 +41,7 @@ fun rememberCoverUiState(
     val all by runtime.apps.all.collectAsStateWithLifecycle()
     val toggles by runtime.toggles.state.collectAsStateWithLifecycle()
     val systemThemed by runtime.iconTheme.themed.collectAsStateWithLifecycle()
+    val trust by TrustUnlock.status.collectAsStateWithLifecycle()
 
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     // Re-read the system's lock screen switches each time the device locks.
@@ -71,6 +75,7 @@ fun rememberCoverUiState(
         battery = battery,
         locked = locked,
         lock = settings.lock,
+        fingerprintUnlock = trust == TrustStatus.READY && settings.lock.fingerprint != FingerprintUnlock.OFF,
         lockPolicy = lockPolicy,
         notifications = notifications,
         notificationAccess = connected,

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shown under Settings > Security > Trust agents -->
+<trust-agent xmlns:android="http://schemas.android.com/apk/res/android"
+    android:settingsActivity="com.tuki.flipslop/.ui.settings.SettingsActivity"
+    android:summary="@string/trust_agent_summary"
+    android:title="@string/trust_agent_label" />

@@ -4,7 +4,8 @@
      cover opens on fold without "Display over other apps", Home on the cover
      returns to FlipSlop without usage access, widgets bind without a dialog
      and the Bluetooth toggle works in place. Themed icons can follow
-     Wallpaper & style through Trebuchet's settings provider.
+     Wallpaper & style through Trebuchet's settings provider, and the trust
+     agent lets a fingerprint on the cover lock screen unlock the device.
 -->
 <permissions>
     <privapp-permissions package="com.tuki.flipslop">
@@ -14,5 +15,7 @@
         <permission name="android.permission.BLUETOOTH_PRIVILEGED" />
         <!-- Trebuchet's themed-icons switch (Wallpaper & style) -->
         <permission name="com.android.launcher3.permission.READ_SETTINGS" />
+        <!-- Fingerprint unlock from the cover lock screen (unlock/CoverTrustAgent) -->
+        <permission name="android.permission.PROVIDE_TRUST_AGENT" />
     </privapp-permissions>
 </permissions>
