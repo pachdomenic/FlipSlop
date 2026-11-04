@@ -10,6 +10,8 @@ import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Icon
 import android.os.Process
 import android.os.SystemClock
@@ -25,6 +27,7 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import com.tuki.flipslop.apps.AppEntry
 import com.tuki.flipslop.core.DeviceProfile
 import com.tuki.flipslop.data.CoverPage
+import com.tuki.flipslop.data.IconShapeStyle
 import com.tuki.flipslop.media.MediaState
 import com.tuki.flipslop.notifications.CoverAction
 import com.tuki.flipslop.notifications.CoverNotification
@@ -60,6 +63,8 @@ class CoverScreenshotTest {
     @Test fun home() = shoot(CoverPage.HOME)
     @Test fun homeIdle() = shoot(CoverPage.HOME, idle = true, name = "home_idle")
     @Test fun homeClassicDock() = shoot(CoverPage.HOME, docked = false, name = "home_classic")
+    @Test fun appsCircle() = shoot(CoverPage.APPS, name = "apps_circle") { it.copy(iconShape = IconShapeStyle.CIRCLE) }
+    @Test fun appsThemed() = shoot(CoverPage.APPS, name = "apps_themed") { it.copy(themedIcons = true) }
     @Test fun notifications() = shoot(CoverPage.NOTIFICATIONS)
     @Test fun media() = shoot(CoverPage.MEDIA)
     @Test fun apps() = shoot(CoverPage.APPS)
@@ -74,9 +79,10 @@ class CoverScreenshotTest {
         idle: Boolean = false,
         docked: Boolean = true,
         name: String = page.name.lowercase(),
+        tweak: (CoverUiState) -> CoverUiState = { it },
     ) {
         val full = sampleState()
-        val state = full.copy(
+        val state = tweak(full).copy(
             notifications = if (idle) emptyList() else full.notifications,
             media = if (idle) null else full.media,
             locked = idle,
@@ -104,9 +110,24 @@ class CoverScreenshotTest {
     private fun sampleState(): CoverUiState {
         val now = Calendar.getInstance().apply { set(2026, Calendar.NOVEMBER, 4, 21, 37, 0) }.timeInMillis
         val pi = PendingIntent.getActivity(context, 0, Intent(), PendingIntent.FLAG_IMMUTABLE)
-        val icon = context.getDrawable(android.R.drawable.sym_def_app_icon)!!
+        val legacy = context.getDrawable(android.R.drawable.sym_def_app_icon)!!
+        // Adaptive icons with a monochrome layer, for themed icons.
+        fun adaptive(glyph: Int, color: Long) = AdaptiveIconDrawable(
+            ColorDrawable(color.toInt()),
+            context.getDrawable(glyph),
+            context.getDrawable(glyph),
+        )
+        val glyphs = listOf(
+            android.R.drawable.ic_menu_call to 0xFF2E7D32,
+            android.R.drawable.ic_dialog_email to 0xFF1565C0,
+            android.R.drawable.ic_menu_camera to 0xFF424242,
+            android.R.drawable.ic_media_play to 0xFFC62828,
+            android.R.drawable.ic_dialog_map to 0xFF00838F,
+            android.R.drawable.ic_menu_gallery to 0xFFEF6C00,
+        )
         val apps = listOf("Phone", "Messages", "Camera", "Music", "Maps", "Photos", "Chrome", "Clock")
             .mapIndexed { i, label ->
+                val icon = glyphs.getOrNull(i)?.let { (g, c) -> adaptive(g, c) } ?: legacy
                 AppEntry(ComponentName("app.$i", "app.$i.Main"), Process.myUserHandle(), label, icon)
             }
         return CoverUiState(
