@@ -63,6 +63,11 @@ class CoverScreenshotTest {
     @Test fun home() = shoot(CoverPage.HOME)
     @Test fun homeIdle() = shoot(CoverPage.HOME, idle = true, name = "home_idle")
     @Test fun homeClassicDock() = shoot(CoverPage.HOME, docked = false, name = "home_classic")
+    @Test fun locked() = shoot(CoverPage.HOME, name = "locked") { it.copy(locked = true) }
+    @Test fun lockedNotifications() = shoot(CoverPage.HOME, name = "locked_notifications") {
+        it.copy(locked = true, lockNotifications = true, media = null)
+    }
+    @Test fun lockedIdle() = shoot(CoverPage.HOME, name = "locked_idle") { it.copy(locked = true, media = null) }
     @Test fun appsCircle() = shoot(CoverPage.APPS, name = "apps_circle") { it.copy(iconShape = IconShapeStyle.CIRCLE) }
     @Test fun appsThemed() = shoot(CoverPage.APPS, name = "apps_themed") { it.copy(themedIcons = true) }
     @Test fun notifications() = shoot(CoverPage.NOTIFICATIONS)
@@ -81,12 +86,12 @@ class CoverScreenshotTest {
         name: String = page.name.lowercase(),
         tweak: (CoverUiState) -> CoverUiState = { it },
     ) {
-        val full = sampleState()
-        val state = tweak(full).copy(
-            notifications = if (idle) emptyList() else full.notifications,
-            media = if (idle) null else full.media,
-            locked = idle,
-            dock = full.dock.copy(pageBarAlways = !docked, notifications = docked, media = docked),
+        val base = tweak(sampleState())
+        val state = base.copy(
+            notifications = if (idle) emptyList() else base.notifications,
+            media = if (idle) null else base.media,
+            locked = base.locked,
+            dock = base.dock.copy(pageBarAlways = !docked, notifications = docked, media = docked),
         )
         // The clock, wavy progress and media ticker never go idle: drive time by hand.
         compose.mainClock.autoAdvance = false
