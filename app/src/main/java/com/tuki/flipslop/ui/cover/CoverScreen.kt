@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import com.tuki.flipslop.R
 import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.data.CoverPage
+import com.tuki.flipslop.data.HomeStyle
 import com.tuki.flipslop.ui.cover.pages.AppsPage
 import com.tuki.flipslop.ui.cover.pages.HomePage
 import com.tuki.flipslop.ui.cover.pages.MediaPage
@@ -238,8 +239,10 @@ fun CoverScreen(
                         // A pill steps aside on its own page: the page already shows the same thing.
                         // targetPage, so it starts leaving while the swipe is still going.
                         val target = pages.getOrNull(pager.targetPage)
+                    // Home in cards mode already shows the player and notifications.
+                    val cardsHome = state.homeStyle == HomeStyle.CARDS && !(state.isIdle && state.idleAospClock)
                         AnimatedVisibility(
-                            visible = dockMedia && target != CoverPage.MEDIA,
+                            visible = dockMedia && target != CoverPage.MEDIA && !(target == CoverPage.HOME && cardsHome),
                             enter = fadeIn() + expandVertically(),
                             exit = fadeOut() + shrinkVertically(),
                         ) {
@@ -250,7 +253,7 @@ fun CoverScreen(
                             )
                         }
                         AnimatedVisibility(
-                            visible = dockNotifications && target != CoverPage.NOTIFICATIONS,
+                            visible = dockNotifications && target != CoverPage.NOTIFICATIONS && !(target == CoverPage.HOME && cardsHome),
                             enter = fadeIn() + expandVertically(),
                             exit = fadeOut() + shrinkVertically(),
                         ) {

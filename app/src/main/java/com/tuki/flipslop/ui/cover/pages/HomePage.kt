@@ -55,6 +55,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tuki.flipslop.R
 import com.tuki.flipslop.data.ClockStyle
+import com.tuki.flipslop.data.HomeStyle
+import com.tuki.flipslop.notifications.LockLine
+import com.tuki.flipslop.ui.cover.CardsLayout
+import com.tuki.flipslop.ui.cover.MAX_CARD_NOTIFICATIONS
 import com.tuki.flipslop.ui.components.IconImage
 import com.tuki.flipslop.ui.cover.CoverActions
 import com.tuki.flipslop.ui.cover.CoverUiState
@@ -71,6 +75,19 @@ fun HomePage(
 ) {
     if (state.isIdle && state.idleAospClock) {
         IdleHome(state, modifier)
+        return
+    }
+    if (state.homeStyle == HomeStyle.CARDS) {
+        // Same cards as the lock screen, unredacted: the device is unlocked here.
+        val lines = state.notifications.take(MAX_CARD_NOTIFICATIONS).map { LockLine(it, it.title, it.text) }
+        CardsLayout(
+            state = state,
+            actions = actions,
+            lines = lines,
+            modifier = modifier,
+            moreCount = state.notifications.size - lines.size,
+            onMore = onOpenNotifications,
+        )
         return
     }
     Column(modifier, verticalArrangement = Arrangement.SpaceBetween) {

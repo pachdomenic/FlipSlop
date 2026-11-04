@@ -74,6 +74,7 @@ import com.tuki.flipslop.core.SystemConfig
 import com.tuki.flipslop.core.Tier
 import com.tuki.flipslop.data.ClockStyle
 import com.tuki.flipslop.data.CoverPrefs
+import com.tuki.flipslop.data.HomeStyle
 import com.tuki.flipslop.data.IconShapeStyle
 import com.tuki.flipslop.data.ThemedIcons
 import com.tuki.flipslop.fold.FoldSnapshot
@@ -194,6 +195,16 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                             else -> stringResource(R.string.themed_icons_system_off)
                         },
                     ) { m -> scope.launch { prefs.setThemedIcons(m) } }
+                },
+                { shapes ->
+                    ChoiceRow(
+                        title = R.string.pref_home_style,
+                        icon = Icons.Rounded.Home,
+                        options = HomeStyle.entries,
+                        selected = settings.homeStyle,
+                        label = { stringResource(if (it == HomeStyle.CARDS) R.string.home_style_cards else R.string.home_style_dock) },
+                        shapes = shapes,
+                    ) { s -> scope.launch { prefs.setHomeStyle(s) } }
                 },
                 { shapes -> ClockStyleRow(settings.clockStyle, shapes) { s -> scope.launch { prefs.setClockStyle(s) } } },
                 switchRow(Icons.Rounded.AccessTime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, settings.idleAospClock) {

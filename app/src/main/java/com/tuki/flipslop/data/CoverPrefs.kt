@@ -32,6 +32,9 @@ val DefaultPages = listOf(
 
 enum class ClockStyle { STACKED, INLINE }
 
+/** Home page: lock screen style cards, or the expressive clock with the camera dock. */
+enum class HomeStyle { CARDS, DOCK }
+
 /** Mask for app icons on the cover. SYSTEM follows the icon shape chosen in Wallpaper & style. */
 enum class IconShapeStyle { EXPRESSIVE, CIRCLE, SQUIRCLE, SYSTEM }
 
@@ -48,6 +51,7 @@ data class CoverSettings(
     val widgetIds: List<Int> = emptyList(),
     val bottomInsetDp: Int = DeviceProfile.current.coverBottomInsetDp,
     val clockStyle: ClockStyle = ClockStyle.STACKED,
+    val homeStyle: HomeStyle = HomeStyle.CARDS,
     val iconShape: IconShapeStyle = IconShapeStyle.EXPRESSIVE,
     val themedIcons: ThemedIcons = ThemedIcons.SYSTEM,
     /** AOSP lock screen style clock while there are no notifications and nothing plays. */
@@ -90,6 +94,7 @@ class CoverPrefs(context: Context) {
             bottomInsetDp = p[BOTTOM_INSET] ?: DeviceProfile.current.coverBottomInsetDp,
             clockStyle = p[CLOCK_STYLE]?.let { runCatching { ClockStyle.valueOf(it) }.getOrNull() }
                 ?: ClockStyle.STACKED,
+            homeStyle = p[HOME_STYLE]?.let { runCatching { HomeStyle.valueOf(it) }.getOrNull() } ?: HomeStyle.CARDS,
             iconShape = p[ICON_SHAPE]?.let { runCatching { IconShapeStyle.valueOf(it) }.getOrNull() }
                 ?: IconShapeStyle.EXPRESSIVE,
             themedIcons = p[THEMED_ICONS]?.let { runCatching { ThemedIcons.valueOf(it) }.getOrNull() }
@@ -130,6 +135,7 @@ class CoverPrefs(context: Context) {
     suspend fun setReturnAfterHome(value: Boolean) = store.edit { it[RETURN_AFTER_HOME] = value }
     suspend fun setBottomInset(dp: Int) = store.edit { it[BOTTOM_INSET] = dp.coerceIn(0, MAX_INSET_DP) }
     suspend fun setClockStyle(style: ClockStyle) = store.edit { it[CLOCK_STYLE] = style.name }
+    suspend fun setHomeStyle(style: HomeStyle) = store.edit { it[HOME_STYLE] = style.name }
     suspend fun setIconShape(style: IconShapeStyle) = store.edit { it[ICON_SHAPE] = style.name }
     suspend fun setThemedIcons(mode: ThemedIcons) = store.edit { it[THEMED_ICONS] = mode.name }
     suspend fun setIdleAospClock(value: Boolean) = store.edit { it[IDLE_AOSP_CLOCK] = value }
@@ -201,6 +207,7 @@ class CoverPrefs(context: Context) {
         private val WIDGETS = stringPreferencesKey("widget_ids")
         private val BOTTOM_INSET = intPreferencesKey("bottom_inset_dp")
         private val CLOCK_STYLE = stringPreferencesKey("clock_style")
+        private val HOME_STYLE = stringPreferencesKey("home_style")
         private val ICON_SHAPE = stringPreferencesKey("icon_shape")
         private val THEMED_ICONS = stringPreferencesKey("themed_icons")
         private val KNOWN_PANELS = stringSetPreferencesKey("known_panels")
