@@ -1,7 +1,5 @@
 package com.tuki.flipslop.ui.settings
 
-import android.appwidget.AppWidgetProviderInfo
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,19 +34,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tuki.flipslop.R
 import com.tuki.flipslop.data.CoverPage
 import com.tuki.flipslop.service.CoverRuntime
 import com.tuki.flipslop.ui.components.ShapedAppIcon
 import com.tuki.flipslop.ui.components.rememberIconShape
+import com.tuki.flipslop.ui.components.widgetPickerItems
 import com.tuki.flipslop.ui.cover.icon
 import com.tuki.flipslop.ui.cover.labelRes
 import kotlinx.coroutines.launch
@@ -205,34 +201,10 @@ fun WidgetsSettings(runtime: CoverRuntime, host: SettingsHost, onBack: () -> Uni
                 )
             }
         } else {
-            items(providers, key = { it.provider.flattenToString() }) { info ->
-                val index = providers.indexOf(info)
-                ProviderRow(info, index, providers.size) {
-                    picking = false
-                    host.addWidget(info)
-                }
+            widgetPickerItems(providers) { info ->
+                picking = false
+                host.addWidget(info)
             }
         }
     }
 }
-
-@Composable
-private fun ProviderRow(info: AppWidgetProviderInfo, index: Int, count: Int, onPick: () -> Unit) {
-    val context = LocalContext.current
-    val resources = LocalResources.current
-    val density = resources.displayMetrics.densityDpi
-    val icon = remember(info) {
-        runCatching { info.loadIcon(context, density)?.toBitmap(96, 96)?.asImageBitmap() }.getOrNull()
-    }
-    val dm = resources.displayMetrics
-    ListItem(
-        onClick = onPick,
-        shapes = ListItemDefaults.segmentedShapes(index, count),
-        modifier = Modifier.padding(bottom = ListItemDefaults.SegmentedGap),
-        leadingContent = { icon?.let { Image(it, contentDescription = null, modifier = Modifier.size(40.dp)) } },
-        supportingContent = {
-            Text("${(info.minWidth / dm.density).toInt()}×${(info.minHeight / dm.density).toInt()} dp · ${info.provider.packageName}")
-        },
-    ) { Text(info.loadLabel(context.packageManager)) }
-}
-
