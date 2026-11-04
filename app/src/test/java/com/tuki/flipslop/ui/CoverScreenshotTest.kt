@@ -117,6 +117,7 @@ class CoverScreenshotTest {
                 tabs = setOf(CoverPage.NOTIFICATIONS, CoverPage.MEDIA),
                 gesture = UnlockGesture.DOUBLE_TAP,
             ),
+            fingerprintUnlock = true,
         )
     }
     @Test fun lockedIdle() = shoot(CoverPage.HOME, name = "locked_idle") { it.copy(locked = true, media = null) }
