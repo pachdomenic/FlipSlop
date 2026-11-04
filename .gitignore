@@ -9,4 +9,3 @@ keystore.properties
 *.iml
 .DS_Store
 captures/
-lineage/prebuilt/*.apk

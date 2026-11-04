@@ -1,24 +1,7 @@
 //
-// FlipSlop as a privileged system app.
+// Permission, sysconfig and overlay files that come with the FlipSlop
+// priv-app. The app itself is the android_app in ../Android.bp.
 //
-// The APK is built with Gradle (see update-prebuilt.sh) and imported here, so
-// the ROM build does not depend on the Compose / Material 3 Expressive versions
-// that happen to be in prebuilts/sdk.
-//
-
-android_app_import {
-    name: "FlipSlop",
-    apk: "prebuilt/FlipSlop.apk",
-    presigned: true,
-    privileged: true,
-    system_ext_specific: true,
-    required: [
-        "FlipSlopFrameworksOverlay",
-        "default-permissions-com.tuki.flipslop.xml",
-        "privapp-permissions-com.tuki.flipslop.xml",
-        "sysconfig-com.tuki.flipslop.xml",
-    ],
-}
 
 prebuilt_etc {
     name: "privapp-permissions-com.tuki.flipslop.xml",

@@ -1,0 +1,77 @@
+//
+// FlipSlop, built from source with the LineageOS tree.
+//
+// Clone this repository to packages/apps/FlipSlop and add FlipSlop to
+// PRODUCT_PACKAGES (lineage/flipslop.mk does that). The Kotlin sources and
+// resources are the same ones Gradle builds; Gradle pins its dependencies to
+// the versions in prebuilts/sdk/current/androidx of LineageOS 23
+// (Android 16 QPR2), so both builds compile the same code.
+//
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+android_app {
+    name: "FlipSlop",
+
+    srcs: ["app/src/main/java/**/*.kt"],
+    resource_dirs: ["app/src/main/res"],
+    // aapt2 needs the package attribute, which AGP no longer allows in the
+    // source manifest: a minimal manifest carries it and the app's manifest
+    // is merged in.
+    manifest: "lineage/AndroidManifest.xml",
+    additional_manifests: ["app/src/main/AndroidManifest.xml"],
+    use_resource_processor: true,
+
+    sdk_version: "current",
+    min_sdk_version: "35",
+
+    privileged: true,
+    system_ext_specific: true,
+
+    // Keep in sync with versionCode / versionName in app/build.gradle.kts.
+    aaptflags: [
+        "--version-code",
+        "1",
+        "--version-name",
+        "0.1.0",
+    ],
+
+    static_libs: [
+        "androidx.activity_activity-compose",
+        "androidx.compose.foundation_foundation",
+        "androidx.compose.material3_material3",
+        "androidx.compose.material_material-icons-extended",
+        "androidx.compose.runtime_runtime",
+        "androidx.compose.ui_ui",
+        "androidx.compose.ui_ui-graphics",
+        "androidx.compose.ui_ui-tooling-preview",
+        "androidx.core_core-ktx",
+        "androidx.datastore_datastore-preferences",
+        "androidx.graphics_graphics-shapes",
+        "androidx.lifecycle_lifecycle-runtime-compose",
+        "androidx.lifecycle_lifecycle-service",
+        "androidx.window_window",
+        "kotlinx_coroutines_android",
+    ],
+
+    // Same opt-ins as app/build.gradle.kts.
+    kotlincflags: [
+        "-Xjvm-default=all",
+        "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+        "-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi",
+        "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+    ],
+
+    optimize: {
+        proguard_flags_files: ["app/proguard-rules.pro"],
+    },
+
+    required: [
+        "FlipSlopFrameworksOverlay",
+        "default-permissions-com.tuki.flipslop.xml",
+        "privapp-permissions-com.tuki.flipslop.xml",
+        "sysconfig-com.tuki.flipslop.xml",
+    ],
+}

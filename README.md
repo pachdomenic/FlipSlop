@@ -124,7 +124,11 @@
 
 ## Сборка
 
-Нужны JDK 17+ и Android SDK с `platforms;android-37.0`: Material 3 Expressive 1.5 требует compileSdk 37.
+Нужны JDK 17+ и Android SDK с `platforms;android-37.0` (его требует `core-ktx` из дерева Lineage).
+Версии библиотек в Gradle совпадают с `prebuilts/sdk/current/androidx` LineageOS 23 (Android 16 QPR2:
+Compose 1.10.0-alpha01, Material 3 1.4.0-alpha17 и т. д.), а Kotlin ограничен языком 2.2, как
+`kotlinc` в AOSP. Поэтому Gradle и Soong собирают один и тот же код. Единственное расхождение:
+`datastore-preferences` 1.2.0-alpha03 из дерева на Maven не публиковалась, Gradle берёт 1.2.0-alpha02.
 targetSdk = 36 (LineageOS 23).
 
 ```bash
@@ -178,16 +182,18 @@ adb shell cmd device_state state reset
 
 ## Встраивание в LineageOS
 
+FlipSlop собирается из исходников вместе с прошивкой, без готовых APK: `Android.bp` в корне описывает
+`android_app` на тех же Kotlin-исходниках и ресурсах, что и Gradle, с библиотеками из
+`prebuilts/sdk` дерева.
+
 1. Положите репозиторий в `packages/apps/FlipSlop` (например, через local manifest).
-2. Соберите APK для прошивки:
-   ```bash
-   ./lineage/update-prebuilt.sh
-   ```
-   Чтобы потом обновлять системное приложение через `adb install`, подпишите его своим ключом:
-   положите `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`) в корень.
-3. В `device.mk` устройства:
+2. В `device.mk` устройства:
    ```make
    $(call inherit-product-if-exists, packages/apps/FlipSlop/lineage/flipslop.mk)
+   ```
+3. Соберите прошивку как обычно (`breakfast arcfox && brunch arcfox`) или только приложение:
+   ```bash
+   m FlipSlop
    ```
 
 В образ попадут (`system_ext`):
@@ -198,7 +204,10 @@ adb shell cmd device_state state reset
 - `etc/sysconfig/sysconfig-com.tuki.flipslop.xml` (`hidden-api-whitelisted-app`, `allow-in-power-save`);
 - `FlipSlopFrameworksOverlay` с `config_defaultListenerAccessPackages`.
 
-APK собирается Gradle, а не Soong: так прошивка не зависит от версии Compose в `prebuilts/sdk`.
+Манифест для Soong (`lineage/AndroidManifest.xml`) несёт только имя пакета: его требует aapt2, а AGP
+не разрешает указывать его в исходном манифесте. Всё остальное подмешивается из
+`app/src/main/AndroidManifest.xml`. Версия задаётся в двух местах: `app/build.gradle.kts` и
+`aaptflags` в `Android.bp`.
 
 ## Значения arcfox, взятые за основу
 
