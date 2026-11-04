@@ -76,6 +76,7 @@ import com.tuki.flipslop.data.ClockStyle
 import com.tuki.flipslop.data.CoverPrefs
 import com.tuki.flipslop.data.HomeStyle
 import com.tuki.flipslop.data.IconShapeStyle
+import com.tuki.flipslop.data.NotificationStyle
 import com.tuki.flipslop.data.ThemedIcons
 import com.tuki.flipslop.fold.FoldSnapshot
 import com.tuki.flipslop.fold.FoldSource
@@ -205,6 +206,21 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                         label = { stringResource(if (it == HomeStyle.CARDS) R.string.home_style_cards else R.string.home_style_dock) },
                         shapes = shapes,
                     ) { s -> scope.launch { prefs.setHomeStyle(s) } }
+                },
+                { shapes ->
+                    ChoiceRow(
+                        title = R.string.pref_notification_style,
+                        icon = Icons.Rounded.Notifications,
+                        options = NotificationStyle.entries,
+                        selected = settings.notificationStyle,
+                        label = {
+                            stringResource(
+                                if (it == NotificationStyle.COMPACT) R.string.notification_style_compact
+                                else R.string.notification_style_detailed,
+                            )
+                        },
+                        shapes = shapes,
+                    ) { s -> scope.launch { prefs.setNotificationStyle(s) } }
                 },
                 { shapes -> ClockStyleRow(settings.clockStyle, shapes) { s -> scope.launch { prefs.setClockStyle(s) } } },
                 switchRow(Icons.Rounded.AccessTime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, settings.idleAospClock) {

@@ -4,6 +4,7 @@ import com.tuki.flipslop.apps.AppEntry
 import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.data.ClockStyle
 import com.tuki.flipslop.data.HomeStyle
+import com.tuki.flipslop.data.NotificationStyle
 import com.tuki.flipslop.data.IconShapeStyle
 import com.tuki.flipslop.data.CoverPage
 import com.tuki.flipslop.data.DefaultPages
@@ -50,6 +51,7 @@ data class CoverUiState(
     val edgePaddingDp: Int = 16,
     val clockStyle: ClockStyle = ClockStyle.STACKED,
     val homeStyle: HomeStyle = HomeStyle.CARDS,
+    val notificationStyle: NotificationStyle = NotificationStyle.COMPACT,
     val iconShape: IconShapeStyle = IconShapeStyle.EXPRESSIVE,
     /** Resolved: draw themed (monochrome) icons. */
     val themedIcons: Boolean = false,

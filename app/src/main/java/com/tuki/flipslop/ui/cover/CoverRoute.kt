@@ -85,6 +85,7 @@ fun rememberCoverUiState(
         edgePaddingDp = edgePaddingDp,
         clockStyle = settings.clockStyle,
         homeStyle = settings.homeStyle,
+        notificationStyle = settings.notificationStyle,
         iconShape = settings.iconShape,
         themedIcons = settings.themedIcons.resolve(systemThemed),
         idleAospClock = settings.idleAospClock,

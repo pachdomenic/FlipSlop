@@ -38,6 +38,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,7 +54,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tuki.flipslop.R
+import com.tuki.flipslop.data.NotificationStyle
 import com.tuki.flipslop.notifications.CoverNotification
+import com.tuki.flipslop.notifications.LockLine
+import com.tuki.flipslop.ui.cover.CompactNotificationCard
 import com.tuki.flipslop.ui.components.IconImage
 import com.tuki.flipslop.ui.cover.CoverActions
 import com.tuki.flipslop.ui.cover.CoverUiState
@@ -92,11 +96,42 @@ fun NotificationsPage(state: CoverUiState, actions: CoverActions, modifier: Modi
             Spacer(Modifier.size(8.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(state.notifications, key = { it.key }) { item ->
-                    NotificationCard(item, state.now, actions, Modifier.animateItem())
+                    if (state.notificationStyle == NotificationStyle.COMPACT) {
+                        DismissibleNotification(item, actions, Modifier.animateItem()) {
+                            CompactNotificationCard(
+                                LockLine(item, item.title, item.text),
+                                onClick = { actions.openNotification(item) },
+                            )
+                        }
+                    } else {
+                        NotificationCard(item, state.now, actions, Modifier.animateItem())
+                    }
                 }
             }
         }
     }
+}
+
+/** Swipe either way to dismiss (when the notification can be cleared). */
+@Composable
+private fun DismissibleNotification(
+    item: CoverNotification,
+    actions: CoverActions,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val dismiss = rememberSwipeToDismissBoxState()
+    if (dismiss.currentValue != SwipeToDismissBoxValue.Settled) {
+        // Fired once the swipe settles past the threshold.
+        LaunchedEffect(item.key) { actions.dismissNotification(item.key) }
+    }
+    SwipeToDismissBox(
+        state = dismiss,
+        modifier = modifier,
+        enableDismissFromStartToEnd = item.isClearable,
+        enableDismissFromEndToStart = item.isClearable,
+        backgroundContent = { Box(Modifier.fillMaxSize()) },
+    ) { content() }
 }
 
 @Composable
@@ -106,18 +141,7 @@ private fun NotificationCard(
     actions: CoverActions,
     modifier: Modifier = Modifier,
 ) {
-    val dismiss = rememberSwipeToDismissBoxState()
-    if (dismiss.currentValue != SwipeToDismissBoxValue.Settled) {
-        // Fired once the swipe settles past the threshold.
-        androidx.compose.runtime.LaunchedEffect(item.key) { actions.dismissNotification(item.key) }
-    }
-    SwipeToDismissBox(
-        state = dismiss,
-        modifier = modifier,
-        enableDismissFromStartToEnd = item.isClearable,
-        enableDismissFromEndToStart = item.isClearable,
-        backgroundContent = { Box(Modifier.fillMaxSize()) },
-    ) {
+    DismissibleNotification(item, actions, modifier) {
         var replying by rememberSaveable(item.key) { mutableStateOf<String?>(null) }
         Surface(
             shape = RoundedCornerShape(24.dp),
