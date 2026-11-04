@@ -2,6 +2,7 @@ package com.tuki.flipslop.notifications
 
 import android.app.PendingIntent
 import android.app.RemoteInput
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 
 data class CoverAction(
@@ -16,6 +17,8 @@ data class CoverNotification(
     val key: String,
     val packageName: String,
     val appLabel: String,
+    /** Used when [smallIcon] cannot be loaded. */
+    val appIcon: Drawable? = null,
     val smallIcon: Icon?,
     val largeIcon: Icon?,
     val color: Int,

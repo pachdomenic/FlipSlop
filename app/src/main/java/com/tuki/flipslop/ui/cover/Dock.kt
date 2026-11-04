@@ -146,6 +146,7 @@ fun DockNotifications(state: CoverUiState, onClick: () -> Unit, modifier: Modifi
                         n.smallIcon,
                         size = 15.dp,
                         colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer),
+                        fallback = n.appIcon,
                     )
                 }
             }

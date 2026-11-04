@@ -301,6 +301,7 @@ private fun NotificationSummary(state: CoverUiState, onOpen: () -> Unit) {
                         n.smallIcon,
                         size = 16.dp,
                         colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer),
+                        fallback = n.appIcon,
                     )
                 }
             }

@@ -8,6 +8,7 @@ import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -28,6 +29,7 @@ class NotificationsRepository(private val context: Context) {
 
     private var listener = WeakReference<CoverNotificationListener>(null)
     private val labelCache = HashMap<String, String>()
+    private val iconCache = HashMap<String, Drawable?>()
 
     val activeListener: CoverNotificationListener? get() = listener.get()
 
@@ -120,6 +122,7 @@ class NotificationsRepository(private val context: Context) {
             key = sbn.key,
             packageName = sbn.packageName,
             appLabel = label(sbn.packageName),
+            appIcon = appIcon(sbn.packageName),
             smallIcon = n.smallIcon,
             largeIcon = n.getLargeIcon(),
             color = n.color,
@@ -154,6 +157,10 @@ class NotificationsRepository(private val context: Context) {
             pm.getApplicationLabel(pm.getApplicationInfo(pkg, PackageManager.ApplicationInfoFlags.of(0)))
                 .toString()
         }.getOrDefault(pkg)
+    }
+
+    private fun appIcon(pkg: String): Drawable? = iconCache.getOrPut(pkg) {
+        runCatching { context.packageManager.getApplicationIcon(pkg) }.getOrNull()
     }
 
     private companion object {

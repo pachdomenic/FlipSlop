@@ -37,6 +37,12 @@
         android:name="android.hardware.sensor.hinge_angle"
         android:required="false" />
 
+    <!-- A launcher: notification icons come from any package, including ones
+         without a launcher activity (system services, carrier apps). -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
     <!-- See launchable apps for the cover app grid -->
     <queries>
         <intent>

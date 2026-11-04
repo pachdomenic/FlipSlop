@@ -133,7 +133,7 @@ private fun NotificationCard(
                             .background(accent(item.color)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        IconImage(item.smallIcon, 14.dp, colorFilter = ColorFilter.tint(Color.White))
+                        IconImage(item.smallIcon, 14.dp, colorFilter = ColorFilter.tint(Color.White), fallback = item.appIcon)
                     }
                     Spacer(Modifier.width(8.dp))
                     Text(
