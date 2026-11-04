@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.sp
 
 private val FallbackDark = darkColorScheme(
@@ -31,6 +32,14 @@ private val FallbackLight = lightColorScheme(
 object ClockType {
     val hours = TextStyle(fontSize = 128.sp, lineHeight = 112.sp, fontWeight = FontWeight.Black, letterSpacing = (-4).sp)
     val minutes = TextStyle(fontSize = 128.sp, lineHeight = 112.sp, fontWeight = FontWeight.Light, letterSpacing = (-4).sp)
+    /** AOSP lock screen proportions: regular weight, tight lines. */
+    val idle = TextStyle(
+        fontSize = 128.sp,
+        lineHeight = 116.sp,
+        fontWeight = FontWeight.Normal,
+        letterSpacing = (-2).sp,
+        lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+    )
     val inline = TextStyle(fontSize = 96.sp, lineHeight = 96.sp, fontWeight = FontWeight.Medium, letterSpacing = (-3).sp)
 }
 

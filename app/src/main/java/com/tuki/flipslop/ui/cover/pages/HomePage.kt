@@ -69,6 +69,10 @@ fun HomePage(
     onOpenNotifications: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (state.isIdle && state.idleAospClock) {
+        IdleHome(state, modifier)
+        return
+    }
     Column(modifier, verticalArrangement = Arrangement.SpaceBetween) {
         StatusRow(state)
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
@@ -82,6 +86,62 @@ fun HomePage(
             MiniMedia(state, actions)
         } else if (state.notifications.isNotEmpty() && !state.dock.notifications) {
             NotificationSummary(state, onOpenNotifications)
+        }
+    }
+}
+
+/**
+ * Nothing pending: a calm clock in the style of the AOSP lock screen. Small
+ * date top left, big stacked digits centered, a lock glyph while locked.
+ */
+@Composable
+private fun IdleHome(state: CoverUiState, modifier: Modifier) {
+    val locale = LocalConfiguration.current.locales[0]
+    val date = remember(state.now / 60_000, locale) {
+        val pattern = DateFormat.getBestDateTimePattern(locale, "EEEdMMM")
+        DateFormat.format(pattern, Date(state.now)).toString()
+    }
+    val time = Date(state.now)
+    val hours = DateFormat.format(if (state.is24h) "HH" else "hh", time).toString()
+    val minutes = DateFormat.format("mm", time).toString()
+    val accent = MaterialTheme.colorScheme.primaryFixed
+
+    Column(modifier) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                date.replaceFirstChar { it.titlecase(locale) },
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+            )
+            state.battery?.let { b ->
+                Text(
+                    "${b.level}%",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+            // Two lines of digits, the lock glyph and some air must fit above the dock.
+            val needed = if (state.locked) 340f else 280f
+            val scale = (maxHeight.value / needed).coerceIn(0.5f, 1f)
+            Column(
+                Modifier.padding(top = (24 * scale).dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                val style = ClockType.idle.copy(
+                    fontSize = ClockType.idle.fontSize * scale,
+                    lineHeight = ClockType.idle.lineHeight * scale,
+                )
+                Digits(hours, style, accent)
+                Digits(minutes, style, accent)
+                if (state.locked) {
+                    Spacer(Modifier.height((20 * scale).dp))
+                    Icon(Icons.Rounded.Lock, contentDescription = null, tint = accent, modifier = Modifier.size(32.dp))
+                }
+            }
         }
     }
 }

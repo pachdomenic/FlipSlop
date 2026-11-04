@@ -38,10 +38,14 @@ data class CoverUiState(
     /** Padding that keeps content clear of the panel's rounded corners. */
     val edgePaddingDp: Int = 16,
     val clockStyle: ClockStyle = ClockStyle.STACKED,
+    val idleAospClock: Boolean = true,
     val dock: DockConfig = DockConfig(),
     /** Draw the camera block (settings preview and screenshots). */
     val showCameraGuide: Boolean = false,
-)
+) {
+    /** Nothing to tell the user: no notifications, nothing playing. */
+    val isIdle: Boolean get() = notifications.isEmpty() && media == null
+}
 
 /** Everything the cover UI can ask for. Defaults do nothing (previews, tests). */
 interface CoverActions {

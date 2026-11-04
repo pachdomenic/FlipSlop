@@ -120,6 +120,9 @@
     <string name="clock_inline">В строку</string>
     <string name="pref_inset">Высота блока камер: %d dp</string>
     <string name="pref_inset_desc">Чтобы содержимое не заходило на блок камер внизу обложки</string>
+    <string name="pref_idle_clock">Простые часы в покое</string>
+    <string name="pref_idle_clock_desc">Как на экране блокировки AOSP, пока нет уведомлений и ничего не играет</string>
+
     <string name="section_camera">Возле камеры</string>
     <string name="pref_dock_toolbar">Панель страниц</string>
     <string name="pref_dock_toolbar_desc">Переключатель страниц рядом с камерами, а не над ними</string>

@@ -42,6 +42,8 @@ data class CoverSettings(
     val widgetIds: List<Int> = emptyList(),
     val bottomInsetDp: Int = DeviceProfile.current.coverBottomInsetDp,
     val clockStyle: ClockStyle = ClockStyle.STACKED,
+    /** AOSP lock screen style clock while there are no notifications and nothing plays. */
+    val idleAospClock: Boolean = true,
     val cameraSide: CameraSide = DeviceProfile.current.coverCameraSide,
     val cameraWidthDp: Int = DeviceProfile.current.coverCameraWidthDp,
     /** What lives in the strip next to the camera block. */
@@ -65,6 +67,7 @@ class CoverPrefs(context: Context) {
             bottomInsetDp = p[BOTTOM_INSET] ?: DeviceProfile.current.coverBottomInsetDp,
             clockStyle = p[CLOCK_STYLE]?.let { runCatching { ClockStyle.valueOf(it) }.getOrNull() }
                 ?: ClockStyle.STACKED,
+            idleAospClock = p[IDLE_AOSP_CLOCK] ?: true,
             cameraSide = p[CAMERA_SIDE]?.let { runCatching { CameraSide.valueOf(it) }.getOrNull() }
                 ?: DeviceProfile.current.coverCameraSide,
             cameraWidthDp = p[CAMERA_WIDTH] ?: DeviceProfile.current.coverCameraWidthDp,
@@ -93,6 +96,7 @@ class CoverPrefs(context: Context) {
     suspend fun setReturnAfterHome(value: Boolean) = store.edit { it[RETURN_AFTER_HOME] = value }
     suspend fun setBottomInset(dp: Int) = store.edit { it[BOTTOM_INSET] = dp.coerceIn(0, MAX_INSET_DP) }
     suspend fun setClockStyle(style: ClockStyle) = store.edit { it[CLOCK_STYLE] = style.name }
+    suspend fun setIdleAospClock(value: Boolean) = store.edit { it[IDLE_AOSP_CLOCK] = value }
     suspend fun setCameraSide(side: CameraSide) = store.edit { it[CAMERA_SIDE] = side.name }
     suspend fun setCameraWidth(dp: Int) = store.edit { it[CAMERA_WIDTH] = dp.coerceIn(0, MAX_CAMERA_WIDTH_DP) }
     suspend fun setDockToolbar(value: Boolean) = store.edit { it[DOCK_TOOLBAR] = value }
@@ -154,6 +158,7 @@ class CoverPrefs(context: Context) {
         private val BOTTOM_INSET = intPreferencesKey("bottom_inset_dp")
         private val CLOCK_STYLE = stringPreferencesKey("clock_style")
         private val KNOWN_PANELS = stringSetPreferencesKey("known_panels")
+        private val IDLE_AOSP_CLOCK = booleanPreferencesKey("idle_aosp_clock")
         private val CAMERA_SIDE = stringPreferencesKey("camera_side")
         private val CAMERA_WIDTH = intPreferencesKey("camera_width_dp")
         private val DOCK_TOOLBAR = booleanPreferencesKey("dock_toolbar")

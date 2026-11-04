@@ -123,6 +123,9 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                 navRow(Icons.Rounded.Apps, R.string.pref_apps, R.string.pref_apps_desc) { navigate(Route.APPS) },
                 navRow(Icons.Rounded.Widgets, R.string.pref_widgets, R.string.pref_widgets_desc) { navigate(Route.WIDGETS) },
                 { shapes -> ClockStyleRow(settings.clockStyle, shapes) { s -> scope.launch { prefs.setClockStyle(s) } } },
+                switchRow(Icons.Rounded.AccessTime, R.string.pref_idle_clock, R.string.pref_idle_clock_desc, settings.idleAospClock) {
+                    scope.launch { prefs.setIdleAospClock(it) }
+                },
             ),
         )
 

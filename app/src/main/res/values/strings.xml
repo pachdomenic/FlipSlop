@@ -120,6 +120,9 @@
     <string name="clock_inline">Inline</string>
     <string name="pref_inset">Camera block height: %d dp</string>
     <string name="pref_inset_desc">Keeps content clear of the camera block at the bottom of the cover</string>
+    <string name="pref_idle_clock">Plain clock when idle</string>
+    <string name="pref_idle_clock_desc">Like the AOSP lock screen while there are no notifications and nothing is playing</string>
+
     <string name="section_camera">Near the camera</string>
     <string name="pref_dock_toolbar">Page bar</string>
     <string name="pref_dock_toolbar_desc">Page switcher beside the cameras instead of above them</string>
