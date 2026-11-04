@@ -40,6 +40,8 @@ fun rememberCoverUiState(
     val systemThemed by runtime.iconTheme.themed.collectAsStateWithLifecycle()
 
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    // Re-read the system's lock screen switches each time the device locks.
+    val lockPolicy = remember(locked) { runtime.notifications.lockScreenPolicy() }
     var battery by remember { mutableStateOf<BatteryInfo?>(null) }
 
     DisposableEffect(context) {
@@ -69,6 +71,8 @@ fun rememberCoverUiState(
         battery = battery,
         locked = locked,
         lockMinimal = settings.lockMinimal,
+        lockNotifications = settings.lockNotifications,
+        lockPolicy = lockPolicy,
         notifications = notifications,
         notificationAccess = connected,
         media = media,

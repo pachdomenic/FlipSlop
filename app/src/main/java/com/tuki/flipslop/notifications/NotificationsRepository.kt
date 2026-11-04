@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
@@ -59,7 +60,7 @@ class NotificationsRepository(private val context: Context) {
             .filter { sbn ->
                 ranking == null || !ranking.getRanking(sbn.key, r) || !r.isAmbient
             }
-            .mapNotNull(::toCover)
+            .mapNotNull { sbn -> toCover(sbn, ranking) }
             .sortedByDescending { it.postTime }
             .toList()
     }
@@ -107,7 +108,7 @@ class NotificationsRepository(private val context: Context) {
         if (sbn.notification.flags and Notification.FLAG_AUTO_CANCEL != 0) dismiss(item.key)
     }
 
-    private fun toCover(sbn: StatusBarNotification): CoverNotification? {
+    private fun toCover(sbn: StatusBarNotification, ranking: NotificationListenerService.RankingMap?): CoverNotification? {
         val n = sbn.notification
         val extras = n.extras
         val title = extras.getCharSequence(Notification.EXTRA_TITLE_BIG)
@@ -135,6 +136,35 @@ class NotificationsRepository(private val context: Context) {
                 val pi = a.actionIntent ?: return@mapNotNull null
                 CoverAction(a.title?.toString().orEmpty(), pi, a.remoteInputs.orEmpty().toList())
             },
+            visibility = lockVisibility(sbn, ranking),
+            publicTitle = n.publicVersion?.extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString(),
+            publicText = n.publicVersion?.extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
+        )
+    }
+
+    /** The app's visibility, tightened by the user's lock screen choice for the channel. */
+    private fun lockVisibility(sbn: StatusBarNotification, ranking: NotificationListenerService.RankingMap?): Int {
+        val app = sbn.notification.visibility
+        val r = NotificationListenerService.Ranking()
+        val channel = if (ranking != null && ranking.getRanking(sbn.key, r)) r.channel?.lockscreenVisibility else null
+        return if (channel == null || channel == NotificationListenerService.Ranking.VISIBILITY_NO_OVERRIDE) app else minOf(app, channel)
+    }
+
+    /**
+     * The system's lock screen notification switches, read like SystemUI
+     * does. A missing key means the AOSP default (on). If Android refuses
+     * the read, sensitive content stays hidden rather than leaking.
+     */
+    fun lockScreenPolicy(): LockScreenPolicy {
+        val cr = context.contentResolver
+        fun secure(key: String, whenUnreadable: Boolean): Boolean = try {
+            Settings.Secure.getInt(cr, key, 1) != 0
+        } catch (e: SecurityException) {
+            whenUnreadable
+        }
+        return LockScreenPolicy(
+            showNotifications = secure("lock_screen_show_notifications", whenUnreadable = true),
+            showPrivateContent = secure("lock_screen_allow_private_notifications", whenUnreadable = false),
         )
     }
 

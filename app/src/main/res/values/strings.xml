@@ -104,6 +104,9 @@
     <string name="lock_hint">Tap or swipe up to unlock</string>
     <string name="pref_lock_minimal">Simple lock screen</string>
     <string name="pref_lock_minimal_desc">While locked the cover shows only the clock and music; tap or swipe up to unlock</string>
+    <string name="lock_contents_hidden">Contents hidden</string>
+    <string name="pref_lock_notifications">Notifications on the lock screen</string>
+    <string name="pref_lock_notifications_desc">Up to three, following Android\'s lock screen rules: hidden ones stay hidden, private ones show only the app unless sensitive content is allowed</string>
     <string name="pref_return_home">Home returns to the cover</string>
     <string name="pref_return_home_desc">Home on the cover goes back to FlipSlop instead of the regular launcher</string>
     <string name="pref_return_home_needs_usage">Needs usage access</string>

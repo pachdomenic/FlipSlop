@@ -127,6 +127,13 @@ fun MainSettings(runtime: CoverRuntime, host: SettingsHost, navigate: (Route) ->
                     scope.launch { prefs.setLockMinimal(it) }
                 },
                 switchRow(
+                    Icons.Rounded.Notifications,
+                    R.string.pref_lock_notifications,
+                    R.string.pref_lock_notifications_desc,
+                    settings.lockNotifications,
+                    enabled = settings.lockMinimal,
+                ) { scope.launch { prefs.setLockNotifications(it) } },
+                switchRow(
                     Icons.Rounded.Home,
                     R.string.pref_return_home,
                     if (caps.usageAccess) R.string.pref_return_home_desc else R.string.pref_return_home_needs_usage,

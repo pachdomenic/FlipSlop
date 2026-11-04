@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Lock
@@ -46,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -57,6 +59,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tuki.flipslop.R
+import com.tuki.flipslop.notifications.LockLine
+import com.tuki.flipslop.notifications.forLockScreen
+import com.tuki.flipslop.ui.components.IconImage
 import com.tuki.flipslop.ui.cover.pages.Digits
 import com.tuki.flipslop.ui.cover.pages.MediaTimes
 import com.tuki.flipslop.ui.theme.ClockType
@@ -64,8 +69,8 @@ import java.util.Date
 import kotlinx.coroutines.delay
 
 /**
- * The cover while the device is locked: the clock and the music, nothing
- * else. A tap on any empty spot or a swipe up brings up the bouncer; once
+ * The cover while the device is locked: the clock and the music, plus up
+ * to three notifications when the user allows it. A tap on any empty spot or a swipe up brings up the bouncer; once
  * the device unlocks the full cover takes over.
  *
  * [contentModifier] places the clock and music above the camera strip,
@@ -96,6 +101,16 @@ fun LockScreen(
             LockDate(state)
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 LockClock(state, stacked = maxHeight >= 200.dp, available = maxHeight.value)
+            }
+            if (state.lockNotifications) {
+                val hidden = stringResource(R.string.lock_contents_hidden)
+                val lines = remember(state.notifications, state.lockPolicy, hidden) {
+                    state.notifications.mapNotNull { it.forLockScreen(state.lockPolicy, hidden) }.take(MAX_LOCK_NOTIFICATIONS)
+                }
+                lines.forEach { line ->
+                    Spacer(Modifier.height(6.dp))
+                    LockNotification(line, onClick = { actions.openNotification(line.item) })
+                }
             }
             if (state.media != null) {
                 Spacer(Modifier.height(8.dp))
@@ -248,3 +263,43 @@ private fun LockMedia(state: CoverUiState, actions: CoverActions) {
         }
     }
 }
+
+/** One notification on the lock screen: app icon, title, one line of text. Opening it unlocks first. */
+@Composable
+private fun LockNotification(line: LockLine, onClick: () -> Unit) {
+    val item = line.item
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+    ) {
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                IconImage(
+                    item.smallIcon,
+                    size = 16.dp,
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer),
+                    fallback = item.appIcon,
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(line.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (line.text.isNotBlank()) {
+                    Text(
+                        line.text,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private const val MAX_LOCK_NOTIFICATIONS = 3

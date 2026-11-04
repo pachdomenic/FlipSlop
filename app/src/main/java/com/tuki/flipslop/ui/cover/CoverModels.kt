@@ -9,6 +9,7 @@ import com.tuki.flipslop.data.DefaultPages
 import com.tuki.flipslop.media.MediaState
 import com.tuki.flipslop.notifications.CoverAction
 import com.tuki.flipslop.notifications.CoverNotification
+import com.tuki.flipslop.notifications.LockScreenPolicy
 import com.tuki.flipslop.toggles.ToggleStates
 
 data class BatteryInfo(val level: Int, val charging: Boolean)
@@ -32,6 +33,9 @@ data class CoverUiState(
     val locked: Boolean = false,
     /** Show the simple lock screen while [locked]. */
     val lockMinimal: Boolean = true,
+    val lockNotifications: Boolean = false,
+    /** The system's lock screen notification switches. */
+    val lockPolicy: LockScreenPolicy = LockScreenPolicy(),
     val notifications: List<CoverNotification> = emptyList(),
     val notificationAccess: Boolean = false,
     val media: MediaState? = null,
