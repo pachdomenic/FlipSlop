@@ -26,7 +26,15 @@ import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.tuki.flipslop.apps.AppEntry
 import com.tuki.flipslop.core.DeviceProfile
+import com.tuki.flipslop.data.ClockAlign
+import com.tuki.flipslop.data.ClockColor
+import com.tuki.flipslop.data.ClockConfig
+import com.tuki.flipslop.data.ClockFont
+import com.tuki.flipslop.data.ClockStyle
 import com.tuki.flipslop.data.CoverPage
+import com.tuki.flipslop.data.DatePosition
+import com.tuki.flipslop.data.DateStyle
+import com.tuki.flipslop.data.HourFormat
 import com.tuki.flipslop.data.HomeStyle
 import com.tuki.flipslop.data.NotificationStyle
 import com.tuki.flipslop.data.IconShapeStyle
@@ -64,6 +72,27 @@ class CoverScreenshotTest {
 
     @Test fun home() = shoot(CoverPage.HOME)
     @Test fun homeIdle() = shoot(CoverPage.HOME, idle = true, name = "home_idle")
+    @Test fun homeBigClock() = shoot(CoverPage.HOME, name = "home_big") { it.copy(homeStyle = HomeStyle.BIG_CLOCK) }
+    @Test fun homeBigClockCustom() = shoot(CoverPage.HOME, name = "home_big_custom") {
+        it.copy(
+            homeStyle = HomeStyle.BIG_CLOCK,
+            clock = ClockConfig(
+                layout = ClockStyle.INLINE,
+                font = ClockFont.SERIF,
+                weight = 300,
+                color = ClockColor.WHITE,
+                dateStyle = DateStyle.LONG,
+                datePosition = DatePosition.BELOW,
+                align = ClockAlign.START,
+            ),
+        )
+    }
+    @Test fun homeBigClockMono() = shoot(CoverPage.HOME, name = "home_big_mono") {
+        it.copy(
+            homeStyle = HomeStyle.BIG_CLOCK,
+            clock = ClockConfig(font = ClockFont.MONO, weight = 800, color = ClockColor.TERTIARY, hourFormat = HourFormat.H12),
+        )
+    }
     @Test fun homeDock() = shoot(CoverPage.HOME, name = "home_dock") { it.copy(homeStyle = HomeStyle.DOCK) }
     @Test fun homeClassicDock() = shoot(CoverPage.HOME, docked = false, name = "home_classic") {
         it.copy(homeStyle = HomeStyle.DOCK)
