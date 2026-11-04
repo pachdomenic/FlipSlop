@@ -10,9 +10,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -155,17 +157,21 @@ fun CoverScreen(
                 )
             }
 
-            // The strip beside the camera block.
+            // The strip beside the camera block; the dock sits centred in it.
             if (dockRows.isNotEmpty()) {
-                Column(
+                Box(
                     Modifier
                         .align(if (cameraLeft) Alignment.BottomEnd else Alignment.BottomStart)
                         .fillMaxWidth()
+                        .height(reserved)
                         .padding(
                             start = if (cameraLeft) cameraWidth else edge,
                             end = if (cameraLeft) edge else cameraWidth,
                             bottom = DockMetrics.BottomMargin,
                         ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                Column(
                     verticalArrangement = Arrangement.spacedBy(DockMetrics.Gap),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -174,7 +180,6 @@ fun CoverScreen(
                             state = state,
                             actions = actions,
                             onClick = { if (!goTo(CoverPage.MEDIA)) actions.mediaOpen() },
-                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                     if (dockNotifications) {
@@ -187,6 +192,7 @@ fun CoverScreen(
                             onClick = { barShown = !barShown },
                         )
                     }
+                }
                 }
             }
 

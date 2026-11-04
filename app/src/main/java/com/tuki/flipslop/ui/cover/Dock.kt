@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -55,6 +56,7 @@ import com.tuki.flipslop.ui.components.IconImage
 /** Fixed row heights, so the pager knows how much room the dock takes. */
 object DockMetrics {
     val MediaHeight = 44.dp
+    val MediaMaxWidth = 200.dp
     val NotificationsHeight = 36.dp
     val DotsHeight = 28.dp
     val FloatingToolbarHeight = 64.dp
@@ -194,7 +196,10 @@ fun DockMedia(state: CoverUiState, actions: CoverActions, onClick: () -> Unit, m
     Surface(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
-        modifier = modifier.height(DockMetrics.MediaHeight).clickable(onClick = onClick),
+        modifier = modifier
+            .height(DockMetrics.MediaHeight)
+            .widthIn(max = DockMetrics.MediaMaxWidth)
+            .clickable(onClick = onClick),
     ) {
         Row(Modifier.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -216,8 +221,9 @@ fun DockMedia(state: CoverUiState, actions: CoverActions, onClick: () -> Unit, m
                 style = MaterialTheme.typography.labelLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f, fill = false),
             )
+            Spacer(Modifier.width(8.dp))
             CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                 FilledIconButton(
                     onClick = actions::mediaPlayPause,

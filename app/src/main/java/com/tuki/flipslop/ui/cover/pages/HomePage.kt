@@ -75,7 +75,7 @@ fun HomePage(
     }
     Column(modifier, verticalArrangement = Arrangement.SpaceBetween) {
         StatusRow(state)
-        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             // Size the clock to whatever height is left above the camera block.
             val scale = (maxHeight.value / 300f).coerceIn(0.5f, 1.15f)
             ExpressiveClock(state, scale)
@@ -206,21 +206,20 @@ private fun ExpressiveClock(state: CoverUiState, scale: Float) {
     )
     val cookie = MaterialShapes.Cookie12Sided.toShape()
 
-    Box(contentAlignment = Alignment.CenterStart) {
+    Box(contentAlignment = Alignment.Center) {
         Box(
             Modifier
-                .padding(start = (24 * scale).dp)
-                .size((220 * scale).dp)
+                .size((240 * scale).dp)
                 .rotate(turn)
                 .clip(cookie)
-                .background(colors.primaryContainer.copy(alpha = 0.55f)),
+                .background(colors.primaryContainer.copy(alpha = 0.4f)),
         )
         when (state.clockStyle) {
-            ClockStyle.STACKED -> Column(Modifier.padding(start = 4.dp)) {
+            ClockStyle.STACKED -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Digits(hours, ClockType.hours.copy(fontSize = ClockType.hours.fontSize * scale, lineHeight = ClockType.hours.lineHeight * scale), colors.primary)
                 Digits(minutes, ClockType.minutes.copy(fontSize = ClockType.minutes.fontSize * scale, lineHeight = ClockType.minutes.lineHeight * scale), colors.tertiary)
             }
-            ClockStyle.INLINE -> Row(Modifier.padding(start = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            ClockStyle.INLINE -> Row(verticalAlignment = Alignment.CenterVertically) {
                 val style = ClockType.inline.copy(fontSize = ClockType.inline.fontSize * scale, lineHeight = ClockType.inline.lineHeight * scale)
                 Digits(hours, style, colors.primary)
                 Text(":", style = style, color = colors.onSurfaceVariant)
