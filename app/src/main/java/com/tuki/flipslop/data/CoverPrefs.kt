@@ -1,0 +1,129 @@
+package com.tuki.flipslop.data
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import com.tuki.flipslop.core.DeviceProfile
+import com.tuki.flipslop.fold.PanelSize
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+
+private val Context.coverDataStore: DataStore<Preferences> by preferencesDataStore(name = "cover")
+
+enum class CoverPage { HOME, NOTIFICATIONS, MEDIA, APPS, WIDGETS, TOGGLES }
+
+enum class ClockStyle { STACKED, INLINE }
+
+data class CoverSettings(
+    val autoShowOnFold: Boolean = true,
+    val showOnWake: Boolean = true,
+    val returnAfterHome: Boolean = true,
+    val pages: List<CoverPage> = CoverPage.entries,
+    val pinnedApps: List<String> = emptyList(),
+    val pinsInitialized: Boolean = false,
+    val widgetIds: List<Int> = emptyList(),
+    val bottomInsetDp: Int = DeviceProfile.current.coverBottomInsetDp,
+    val clockStyle: ClockStyle = ClockStyle.STACKED,
+)
+
+class CoverPrefs(context: Context) {
+    private val store = context.applicationContext.coverDataStore
+
+    val settings: Flow<CoverSettings> = store.data.map { p ->
+        CoverSettings(
+            autoShowOnFold = p[AUTO_SHOW] ?: true,
+            showOnWake = p[SHOW_ON_WAKE] ?: true,
+            returnAfterHome = p[RETURN_AFTER_HOME] ?: true,
+            pages = p[PAGES]?.let(::decodePages) ?: CoverPage.entries,
+            pinnedApps = p[PINNED]?.split(LIST_SEP)?.filter { it.isNotBlank() } ?: emptyList(),
+            pinsInitialized = p[PINS_INIT] ?: false,
+            widgetIds = p[WIDGETS]?.split(LIST_SEP)?.mapNotNull { it.toIntOrNull() } ?: emptyList(),
+            bottomInsetDp = p[BOTTOM_INSET] ?: DeviceProfile.current.coverBottomInsetDp,
+            clockStyle = p[CLOCK_STYLE]?.let { runCatching { ClockStyle.valueOf(it) }.getOrNull() }
+                ?: ClockStyle.STACKED,
+        )
+    }.distinctUntilChanged()
+
+    val knownPanels: Flow<Set<PanelSize>> = store.data
+        .map { p -> p[KNOWN_PANELS].orEmpty().mapNotNull(PanelSize::parse).toSet() }
+        .distinctUntilChanged()
+
+    suspend fun rememberPanel(panel: PanelSize) {
+        store.edit { p ->
+            val current = p[KNOWN_PANELS].orEmpty()
+            val value = panel.toString()
+            if (value !in current) p[KNOWN_PANELS] = (current + value).toList().takeLast(MAX_PANELS).toSet()
+        }
+    }
+
+    suspend fun forgetPanels() = store.edit { it.remove(KNOWN_PANELS) }
+
+    suspend fun setAutoShowOnFold(value: Boolean) = store.edit { it[AUTO_SHOW] = value }
+    suspend fun setShowOnWake(value: Boolean) = store.edit { it[SHOW_ON_WAKE] = value }
+    suspend fun setReturnAfterHome(value: Boolean) = store.edit { it[RETURN_AFTER_HOME] = value }
+    suspend fun setBottomInset(dp: Int) = store.edit { it[BOTTOM_INSET] = dp.coerceIn(0, MAX_INSET_DP) }
+    suspend fun setClockStyle(style: ClockStyle) = store.edit { it[CLOCK_STYLE] = style.name }
+    suspend fun setPages(pages: List<CoverPage>) = store.edit {
+        it[PAGES] = pages.distinct().ifEmpty { listOf(CoverPage.HOME) }.joinToString(LIST_SEP) { p -> p.name }
+    }
+
+    suspend fun setPinnedApps(keys: List<String>) = store.edit {
+        it[PINNED] = keys.distinct().joinToString(LIST_SEP)
+        it[PINS_INIT] = true
+    }
+
+    suspend fun togglePinned(key: String) = store.edit { p ->
+        val current = p[PINNED]?.split(LIST_SEP)?.filter { it.isNotBlank() }.orEmpty()
+        val next = if (key in current) current - key else current + key
+        p[PINNED] = next.joinToString(LIST_SEP)
+        p[PINS_INIT] = true
+    }
+
+    suspend fun addWidget(id: Int) = store.edit { p ->
+        val current = p[WIDGETS]?.split(LIST_SEP)?.mapNotNull { it.toIntOrNull() }.orEmpty()
+        if (id !in current) p[WIDGETS] = (current + id).joinToString(LIST_SEP)
+    }
+
+    suspend fun removeWidget(id: Int) = store.edit { p ->
+        val current = p[WIDGETS]?.split(LIST_SEP)?.mapNotNull { it.toIntOrNull() }.orEmpty()
+        p[WIDGETS] = (current - id).joinToString(LIST_SEP)
+    }
+
+    suspend fun moveWidget(id: Int, delta: Int) = store.edit { p ->
+        val current = p[WIDGETS]?.split(LIST_SEP)?.mapNotNull { it.toIntOrNull() }.orEmpty().toMutableList()
+        val from = current.indexOf(id)
+        val to = (from + delta).coerceIn(0, current.lastIndex)
+        if (from >= 0 && from != to) {
+            current.add(to, current.removeAt(from))
+            p[WIDGETS] = current.joinToString(LIST_SEP)
+        }
+    }
+
+    private fun decodePages(raw: String): List<CoverPage> =
+        raw.split(LIST_SEP).mapNotNull { runCatching { CoverPage.valueOf(it) }.getOrNull() }
+            .ifEmpty { listOf(CoverPage.HOME) }
+
+    companion object {
+        const val MAX_INSET_DP = 240
+        private const val MAX_PANELS = 4
+        private const val LIST_SEP = ","
+
+        private val AUTO_SHOW = booleanPreferencesKey("auto_show_on_fold")
+        private val SHOW_ON_WAKE = booleanPreferencesKey("show_on_wake")
+        private val RETURN_AFTER_HOME = booleanPreferencesKey("return_after_home")
+        private val PAGES = stringPreferencesKey("pages")
+        private val PINNED = stringPreferencesKey("pinned_apps")
+        private val PINS_INIT = booleanPreferencesKey("pins_initialized")
+        private val WIDGETS = stringPreferencesKey("widget_ids")
+        private val BOTTOM_INSET = intPreferencesKey("bottom_inset_dp")
+        private val CLOCK_STYLE = stringPreferencesKey("clock_style")
+        private val KNOWN_PANELS = stringSetPreferencesKey("known_panels")
+    }
+}
