@@ -6,13 +6,22 @@ import android.app.KeyguardManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
+import android.content.pm.ShortcutInfo
+import android.content.res.Resources
+import android.content.res.XmlResourceParser
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
+import android.net.Uri
+import android.os.Bundle
 import android.os.Process
 import android.os.UserHandle
 import android.provider.MediaStore
+import android.widget.Toast
+import com.tuki.flipslop.R
+import org.xmlpull.v1.XmlPullParser
 import com.tuki.flipslop.data.CoverPrefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +43,24 @@ data class AppEntry(
 ) {
     val key: String get() = component.flattenToString()
 }
+
+/**
+ * One of an app's shortcuts ("New message", "Selfie"...). Comes from
+ * ShortcutManager when FlipSlop may read shortcuts (it is the default
+ * launcher), otherwise straight from the app's manifest.
+ */
+class AppShortcut(
+    val label: String,
+    val icon: Drawable?,
+    internal val info: ShortcutInfo? = null,
+    internal val intents: List<Intent> = emptyList(),
+)
+
+/** What the long-press menu of an app offers besides pinning. */
+data class AppMenu(
+    val shortcuts: List<AppShortcut> = emptyList(),
+    val canUninstall: Boolean = false,
+)
 
 class AppsRepository(
     private val context: Context,
@@ -116,26 +143,162 @@ class AppsRepository(
     }
 
     /** Launch on the activity's display; unlock first when the keyguard is up. */
-    fun launch(activity: Activity, entry: AppEntry, bounds: Rect? = null) {
-        val start = {
-            val options = ActivityOptions.makeBasic().setLaunchDisplayId(activity.display.displayId)
-            runCatching {
-                launcherApps.startMainActivity(entry.component, entry.user, bounds, options.toBundle())
+    fun launch(activity: Activity, entry: AppEntry, bounds: Rect? = null) = whenUnlocked(activity) {
+        runCatching {
+            launcherApps.startMainActivity(entry.component, entry.user, bounds, activity.coverOptions())
+        }
+    }
+
+    /** Shortcuts, app info and uninstall for the app's long-press menu. */
+    suspend fun menu(entry: AppEntry): AppMenu = withContext(Dispatchers.IO) {
+        AppMenu(
+            shortcuts = runCatching { shortcuts(entry) }.getOrDefault(emptyList()),
+            canUninstall = runCatching {
+                val info = context.packageManager.getApplicationInfo(entry.component.packageName, 0)
+                info.flags and ApplicationInfo.FLAG_SYSTEM == 0
+            }.getOrDefault(false),
+        )
+    }
+
+    fun launchShortcut(activity: Activity, shortcut: AppShortcut) = whenUnlocked(activity) {
+        val started = runCatching {
+            val info = shortcut.info
+            if (info != null) {
+                launcherApps.startShortcut(info, null, activity.coverOptions())
+            } else {
+                activity.startActivities(shortcut.intents.toTypedArray(), activity.coverOptions())
             }
         }
+        if (started.isFailure) {
+            Toast.makeText(activity, R.string.cannot_open, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun openAppInfo(activity: Activity, entry: AppEntry) = whenUnlocked(activity) {
+        runCatching {
+            launcherApps.startAppDetailsActivity(entry.component, entry.user, null, activity.coverOptions())
+        }
+    }
+
+    /** The system's uninstall dialog, on the cover. */
+    fun uninstall(activity: Activity, entry: AppEntry) = whenUnlocked(activity) {
+        val intent = Intent(
+            Intent.ACTION_DELETE,
+            Uri.fromParts("package", entry.component.packageName, entry.component.className),
+        )
+            .putExtra(Intent.EXTRA_USER, entry.user)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+        runCatching { activity.startActivity(intent, activity.coverOptions()) }
+    }
+
+    private fun Activity.coverOptions(): Bundle =
+        ActivityOptions.makeBasic().setLaunchDisplayId(display.displayId).toBundle()
+
+    private fun whenUnlocked(activity: Activity, block: () -> Unit) {
         val km = activity.getSystemService(KeyguardManager::class.java)
         if (km.isKeyguardLocked) {
             km.requestDismissKeyguard(activity, object : KeyguardManager.KeyguardDismissCallback() {
                 override fun onDismissSucceeded() {
-                    start()
+                    block()
                 }
             })
         } else {
-            start()
+            block()
         }
+    }
+
+    private fun shortcuts(entry: AppEntry): List<AppShortcut> {
+        val host = runCatching { launcherApps.hasShortcutHostPermission() }.getOrDefault(false)
+        return if (host) hostShortcuts(entry) else manifestShortcuts(entry)
+    }
+
+    /** Static and dynamic shortcuts through LauncherApps, as the default launcher. */
+    private fun hostShortcuts(entry: AppEntry): List<AppShortcut> {
+        val query = LauncherApps.ShortcutQuery()
+            .setPackage(entry.component.packageName)
+            .setActivity(entry.component)
+            .setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST or LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC)
+        val density = context.resources.displayMetrics.densityDpi
+        return launcherApps.getShortcuts(query, entry.user).orEmpty()
+            .filter { it.isEnabled }
+            // Same order as the home screen: manifest ones first, each group by rank.
+            .sortedWith(compareBy({ !it.isDeclaredInManifest }, { it.rank }))
+            .take(MAX_SHORTCUTS)
+            .mapNotNull { info ->
+                val label = (info.shortLabel ?: info.longLabel)?.toString()?.takeIf { it.isNotBlank() }
+                    ?: return@mapNotNull null
+                AppShortcut(label, runCatching { launcherApps.getShortcutIconDrawable(info, density) }.getOrNull(), info)
+            }
+    }
+
+    /**
+     * Without shortcut access (FlipSlop is not the default launcher), read the
+     * shortcuts the app declares in its manifest (android.app.shortcuts) and
+     * keep the ones that open an exported activity we may start ourselves.
+     */
+    private fun manifestShortcuts(entry: AppEntry): List<AppShortcut> {
+        val pm = context.packageManager
+        val activity = pm.getActivityInfo(entry.component, PackageManager.GET_META_DATA)
+        val xml = activity.metaData?.getInt(SHORTCUTS_META_DATA) ?: 0
+        if (xml == 0) return emptyList()
+        val res = pm.getResourcesForApplication(activity.applicationInfo)
+        return res.getXml(xml).use { parseShortcuts(it, res) }
+            .filter { it.intents.isNotEmpty() && canStart(it.intents.last()) }
+            .take(MAX_SHORTCUTS)
+    }
+
+    private fun parseShortcuts(parser: XmlResourceParser, res: Resources): List<AppShortcut> {
+        val out = mutableListOf<AppShortcut>()
+        var label: String? = null
+        var iconRes = 0
+        var enabled = false
+        var intents = mutableListOf<Intent>()
+        var event = parser.eventType
+        while (event != XmlPullParser.END_DOCUMENT) {
+            if (event == XmlPullParser.START_TAG && parser.name == "shortcut") {
+                enabled = parser.getAttributeBooleanValue(ANDROID_NS, "enabled", true)
+                label = parser.string(res, "shortcutShortLabel") ?: parser.string(res, "shortcutLongLabel")
+                iconRes = parser.getAttributeResourceValue(ANDROID_NS, "icon", 0)
+                intents = mutableListOf()
+            } else if (event == XmlPullParser.START_TAG && parser.name == "intent") {
+                // Reads up to the matching </intent>, extras and categories included.
+                val intent = Intent.parseIntent(res, parser, parser)
+                if (intent.action == null) intent.action = Intent.ACTION_VIEW
+                intents += intent
+            } else if (event == XmlPullParser.END_TAG && parser.name == "shortcut") {
+                val text = label
+                if (enabled && text != null && intents.isNotEmpty()) {
+                    // As ShortcutManager does: the stack starts in a fresh task.
+                    intents.first().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    val icon = iconRes.takeIf { it != 0 }?.let { runCatching { res.getDrawable(it, null) }.getOrNull() }
+                    out += AppShortcut(text, icon, intents = intents)
+                }
+            }
+            event = parser.next()
+        }
+        return out
+    }
+
+    private fun XmlResourceParser.string(res: Resources, name: String): String? {
+        val id = getAttributeResourceValue(ANDROID_NS, name, 0)
+        val text = if (id != 0) runCatching { res.getString(id) }.getOrNull() else getAttributeValue(ANDROID_NS, name)
+        return text?.takeIf { it.isNotBlank() }
+    }
+
+    private fun canStart(intent: Intent): Boolean {
+        val info = context.packageManager.resolveActivity(intent, 0)?.activityInfo ?: return false
+        val permission = info.permission
+        return info.exported &&
+            (permission == null || context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED)
     }
 
     fun togglePin(entry: AppEntry) {
         scope.launch { prefs.togglePinned(entry.key) }
+    }
+
+    private companion object {
+        const val SHORTCUTS_META_DATA = "android.app.shortcuts"
+        const val ANDROID_NS = "http://schemas.android.com/apk/res/android"
+        const val MAX_SHORTCUTS = 4
     }
 }

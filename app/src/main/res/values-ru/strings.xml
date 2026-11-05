@@ -49,9 +49,12 @@
 
     <string name="apps_pinned">Закреплённые</string>
     <string name="apps_all">Все</string>
-    <string name="apps_pinned_empty">Удерживайте приложение во вкладке «Все», чтобы закрепить его здесь</string>
+    <string name="apps_pinned_empty">Удерживайте приложение во вкладке «Все» и выберите «Закрепить», чтобы оно появилось здесь</string>
     <string name="pin">Закрепить</string>
     <string name="unpin">Открепить</string>
+    <string name="app_info">О приложении</string>
+    <string name="app_uninstall">Удалить</string>
+    <string name="app_menu">Действия</string>
 
     <string name="widgets_empty">На обложке пока нет виджетов</string>
     <string name="widgets_add">Добавить виджет</string>

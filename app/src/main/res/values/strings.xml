@@ -48,9 +48,12 @@
 
     <string name="apps_pinned">Pinned</string>
     <string name="apps_all">All apps</string>
-    <string name="apps_pinned_empty">Long-press an app in All apps to pin it here</string>
+    <string name="apps_pinned_empty">Long-press an app in All apps and choose Pin to keep it here</string>
     <string name="pin">Pin</string>
     <string name="unpin">Unpin</string>
+    <string name="app_info">App info</string>
+    <string name="app_uninstall">Uninstall</string>
+    <string name="app_menu">Options</string>
 
     <string name="widgets_empty">No widgets on the cover yet</string>
     <string name="widgets_add">Add widget</string>
