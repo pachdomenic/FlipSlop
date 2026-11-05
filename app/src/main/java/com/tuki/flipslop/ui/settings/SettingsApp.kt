@@ -1,12 +1,32 @@
 package com.tuki.flipslop.ui.settings
 
-import androidx.activity.compose.BackHandler
+import androidx.activity.BackEventCompat
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.SeekableTransitionState
+import androidx.compose.animation.core.animateDp
+import androidx.compose.animation.core.rememberTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.IntOffset
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -65,25 +85,97 @@ fun SettingsApp(runtime: CoverRuntime, initialRoute: String?, host: SettingsHost
     var stack by rememberSaveable(stateSaver = RouteStackSaver) { mutableStateOf(listOf(start)) }
     val navigate: (Route) -> Unit = { stack = stack + it }
     val back: () -> Unit = { if (stack.size > 1) stack = stack.dropLast(1) else host.finish() }
-    BackHandler(enabled = stack.size > 1, onBack = back)
 
-    AnimatedContent(
-        targetState = stack,
+    // Predictive back: the transition follows the back gesture (seeking), the
+    // page shrinks toward the swipe edge and shows the previous one under it.
+    // On the first screen the system's back-to-home preview takes over.
+    val transitionState = remember { SeekableTransitionState(stack) }
+    val scope = rememberCoroutineScope()
+    var gesture by remember { mutableStateOf<BackGesture?>(null) }
+    LaunchedEffect(stack) {
+        transitionState.animateTo(stack)
+        gesture = null
+    }
+    PredictiveBackHandler(enabled = stack.size > 1) { progress ->
+        val current = stack
+        val previous = current.dropLast(1)
+        try {
+            progress.collect { event ->
+                gesture = BackGesture(fromLeft = event.swipeEdge == BackEventCompat.EDGE_LEFT)
+                transitionState.seekTo(event.progress, targetState = previous)
+            }
+            stack = previous
+        } catch (e: CancellationException) {
+            scope.launch {
+                transitionState.animateTo(current)
+                gesture = null
+            }
+            throw e
+        }
+    }
+
+    rememberTransition(transitionState, label = "route").AnimatedContent(
         contentKey = { it.last() },
         transitionSpec = {
             val forward = targetState.size >= initialState.size
-            (slideInHorizontally { if (forward) it / 4 else -it / 4 } + fadeIn()) togetherWith
-                (slideOutHorizontally { if (forward) -it / 4 else it / 4 } + fadeOut())
+            if (forward) {
+                (slideInHorizontally { it / 4 } + fadeIn()) togetherWith
+                    (slideOutHorizontally { -it / 4 } + fadeOut())
+            } else {
+                backTransform(gesture)
+            }
         },
-        label = "route",
     ) { current ->
-        when (val route = current.last()) {
-            Route.MAIN -> MainSettings(runtime, host, navigate)
-            Route.PAGES -> PagesSettings(runtime, onBack = back)
-            Route.APPS -> AppsSettings(runtime, onBack = back)
-            Route.WIDGETS -> WidgetsSettings(runtime, host, onBack = back)
-            else -> CategorySettings(route, runtime, host, navigate, onBack = back)
+        // Rounded corners on the page while it leaves, like the system back preview.
+        val corner by transition.animateDp(label = "corner") { if (it == EnterExitState.PostExit) 32.dp else 0.dp }
+        Box(Modifier.graphicsLayer { shape = RoundedCornerShape(corner); clip = corner > 0.dp }) {
+            RouteContent(current.last(), runtime, host, navigate, back)
         }
+    }
+}
+
+private data class BackGesture(val fromLeft: Boolean)
+
+private const val BACK_MS = 300
+private const val BACK_FADE_MS = 90
+
+/**
+ * Back to the previous screen: the page being left stays on top, shrinks and
+ * moves away from the swipe edge, and fades only at the very end; the previous
+ * page waits beneath with a little parallax. Linear while it follows a gesture
+ * (the system already eases the gesture progress), eased for the back button.
+ */
+private fun backTransform(gesture: BackGesture?): ContentTransform {
+    val toRight = gesture?.fromLeft ?: true
+    val easing = if (gesture != null) LinearEasing else FastOutSlowInEasing
+    val move = tween<IntOffset>(BACK_MS, easing = easing)
+    val scale = tween<Float>(BACK_MS, easing = easing)
+    val enter = slideInHorizontally(move) { if (toRight) -it / 10 else it / 10 } + fadeIn(scale, initialAlpha = 0.5f)
+    val exit = scaleOut(scale, targetScale = 0.88f) +
+        slideOutHorizontally(move) { if (toRight) it / 8 else -it / 8 } +
+        fadeOut(tween(BACK_FADE_MS, delayMillis = BACK_MS - BACK_FADE_MS))
+    return ContentTransform(
+        targetContentEnter = enter,
+        initialContentExit = exit,
+        targetContentZIndex = -1f,
+        sizeTransform = SizeTransform(clip = false),
+    )
+}
+
+@Composable
+private fun RouteContent(
+    route: Route,
+    runtime: CoverRuntime,
+    host: SettingsHost,
+    navigate: (Route) -> Unit,
+    back: () -> Unit,
+) {
+    when (route) {
+        Route.MAIN -> MainSettings(runtime, host, navigate)
+        Route.PAGES -> PagesSettings(runtime, onBack = back)
+        Route.APPS -> AppsSettings(runtime, onBack = back)
+        Route.WIDGETS -> WidgetsSettings(runtime, host, onBack = back)
+        else -> CategorySettings(route, runtime, host, navigate, onBack = back)
     }
 }
 
