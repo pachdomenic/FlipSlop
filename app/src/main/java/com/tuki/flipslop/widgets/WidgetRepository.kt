@@ -23,8 +23,15 @@ class WidgetRepository(
 
     private var listeners = 0
 
+    // AppWidgetService refuses every call (IllegalStateException) until the
+    // user unlocks after a reboot: the cover just shows no widgets meanwhile.
     fun startListening() {
         if (listeners++ == 0) runCatching { host.startListening() }
+    }
+
+    /** The first unlock after a reboot: listening refused while locked can start now. */
+    fun onUserUnlocked() {
+        if (listeners > 0) runCatching { host.startListening() }
     }
 
     fun stopListening() {
@@ -34,15 +41,16 @@ class WidgetRepository(
         }
     }
 
-    fun providers(): List<AppWidgetProviderInfo> =
+    fun providers(): List<AppWidgetProviderInfo> = runCatching {
         manager.getInstalledProvidersForProfile(Process.myUserHandle())
             .filter {
                 it.widgetCategory and
                     (AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN or AppWidgetProviderInfo.WIDGET_CATEGORY_KEYGUARD) != 0
             }
             .sortedBy { it.loadLabel(context.packageManager).lowercase() }
+    }.getOrDefault(emptyList())
 
-    fun info(id: Int): AppWidgetProviderInfo? = manager.getAppWidgetInfo(id)
+    fun info(id: Int): AppWidgetProviderInfo? = runCatching { manager.getAppWidgetInfo(id) }.getOrNull()
 
     fun allocate(): Int = host.allocateAppWidgetId()
 
@@ -59,7 +67,7 @@ class WidgetRepository(
 
     fun createView(viewContext: Context, id: Int): AppWidgetHostView? {
         val info = info(id) ?: return null
-        return host.createView(viewContext, id, info)
+        return runCatching { host.createView(viewContext, id, info) }.getOrNull()
     }
 
     suspend fun commit(id: Int) = prefs.addWidget(id)

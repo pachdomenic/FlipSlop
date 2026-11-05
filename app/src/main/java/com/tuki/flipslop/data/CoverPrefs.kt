@@ -8,15 +8,36 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.core.DeviceProfile
 import com.tuki.flipslop.fold.PanelSize
+import java.io.File
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
-private val Context.coverDataStore: DataStore<Preferences> by preferencesDataStore(name = "cover")
+private const val STORE_FILE = "datastore/cover.preferences_pb"
+
+/**
+ * Settings live in device protected storage, so the cover has them right
+ * after a reboot, before the first unlock (the app is directBootAware).
+ * One instance per process, as DataStore requires.
+ */
+@Volatile
+private var coverStore: DataStore<Preferences>? = null
+
+private fun coverDataStore(app: Context): DataStore<Preferences> = coverStore ?: synchronized(CoverPrefs::class) {
+    coverStore ?: PreferenceDataStoreFactory.create(
+        produceFile = { File(app.createDeviceProtectedStorageContext().filesDir, STORE_FILE) },
+    ).also { coverStore = it }
+}
 
 enum class CoverPage { HOME, NOTIFICATIONS, MEDIA, APPS, WIDGETS, TOGGLES }
 
@@ -82,7 +103,28 @@ data class CoverSettings(
 )
 
 class CoverPrefs(context: Context) {
-    private val store = context.applicationContext.coverDataStore
+    private val app = context.applicationContext
+    private val store = coverDataStore(app)
+
+    /**
+     * Older versions kept the settings in credential encrypted storage, which
+     * opens only after the first unlock. Once it does, take them over (they win
+     * over anything written while locked) and drop the old file. Call only
+     * while the user is unlocked.
+     */
+    suspend fun migrateFromCredentialStorage() = withContext(Dispatchers.IO) {
+        val old = File(app.filesDir, STORE_FILE)
+        if (!old.exists()) return@withContext
+        val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+        try {
+            val legacy = PreferenceDataStoreFactory.create(scope = scope, produceFile = { old })
+            val values = legacy.data.first()
+            store.edit { it += values }
+        } finally {
+            scope.cancel()
+        }
+        old.delete()
+    }
 
     val settings: Flow<CoverSettings> = store.data.map { p ->
         CoverSettings(

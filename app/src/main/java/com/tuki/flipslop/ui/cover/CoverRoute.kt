@@ -10,6 +10,7 @@ import android.util.SizeF
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,8 +48,12 @@ fun rememberCoverUiState(
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     // Re-read the system's lock screen switches each time the device locks.
     val lockPolicy = remember(locked) { runtime.notifications.lockScreenPolicy() }
-    // SystemUI takes the fingerprint under the cover: a touch works whenever one is enrolled.
-    val systemFingerprint = remember(locked) { SystemFingerprint.active(context) && SystemFingerprint.enrolled(context) }
+    // SystemUI takes the fingerprint under the cover: a touch works whenever one is enrolled,
+    // except before the first unlock after a reboot, which always needs the PIN.
+    val userUnlocked by runtime.userUnlocked.collectAsStateWithLifecycle()
+    val systemFingerprint = remember(locked, userUnlocked) {
+        userUnlocked && SystemFingerprint.active(context) && SystemFingerprint.enrolled(context)
+    }
     var battery by remember { mutableStateOf<BatteryInfo?>(null) }
 
     DisposableEffect(context) {
@@ -124,6 +129,13 @@ private fun Intent.toBattery(): BatteryInfo? {
 /** Hosts one app widget sized to the space the cover gives it. */
 @Composable
 fun HostedWidget(runtime: CoverRuntime, id: Int, modifier: Modifier = Modifier) {
+    // No widgets before the first unlock after a reboot; build the view again once there are.
+    val unlocked by runtime.userUnlocked.collectAsStateWithLifecycle()
+    key(unlocked) { WidgetView(runtime, id, modifier) }
+}
+
+@Composable
+private fun WidgetView(runtime: CoverRuntime, id: Int, modifier: Modifier) {
     AndroidView(
         factory = { ctx ->
             runtime.widgets.createView(ctx, id) ?: android.view.View(ctx)

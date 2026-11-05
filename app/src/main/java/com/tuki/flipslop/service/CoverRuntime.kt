@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.PowerManager
+import android.os.UserManager
 import com.tuki.flipslop.apps.AppsRepository
 import com.tuki.flipslop.apps.SystemIconTheme
 import com.tuki.flipslop.core.CapabilityState
@@ -64,6 +65,15 @@ class CoverRuntime(private val app: Application) {
     private val powerManager = app.getSystemService(PowerManager::class.java)
     val interactive = MutableStateFlow(powerManager.isInteractive)
 
+    /**
+     * False right after a reboot until the first unlock (Direct Boot): the
+     * cover already runs, but widgets, most apps and a fingerprint unlock
+     * only become available once the user has entered the PIN.
+     */
+    private val userManager = app.getSystemService(UserManager::class.java)
+    private val _userUnlocked = MutableStateFlow(userManager.isUserUnlocked)
+    val userUnlocked: StateFlow<Boolean> = _userUnlocked.asStateFlow()
+
     private var started = false
 
     fun start() {
@@ -94,8 +104,25 @@ class CoverRuntime(private val app: Application) {
                 .collect { ensureKeepAlive() }
         }
 
-        scope.launch { apps.ensureDefaultPins() }
+        if (userManager.isUserUnlocked) onUserUnlocked()
     }
+
+    /** The first unlock after a reboot, or start-up when already unlocked. Runs once. */
+    private fun onUserUnlocked() {
+        if (unlockHandled) return
+        unlockHandled = true
+        _userUnlocked.value = true
+        scope.launch {
+            runCatching { prefs.migrateFromCredentialStorage() }
+            // Before the unlock only direct boot aware apps are listed: pin defaults from the full list.
+            apps.ensureDefaultPins()
+        }
+        apps.reload()
+        widgets.onUserUnlocked()
+        refreshCapabilities()
+    }
+
+    private var unlockHandled = false
 
     /** BOOT_COMPLETED: the one moment a foreground service start is always allowed. */
     fun onBoot() {
@@ -153,7 +180,11 @@ class CoverRuntime(private val app: Application) {
                         }
                     }
                     Intent.ACTION_SCREEN_OFF -> interactive.value = false
-                    Intent.ACTION_USER_PRESENT -> refreshCapabilities()
+                    Intent.ACTION_USER_PRESENT -> {
+                        if (userManager.isUserUnlocked) onUserUnlocked()
+                        refreshCapabilities()
+                    }
+                    Intent.ACTION_USER_UNLOCKED -> onUserUnlocked()
                 }
             }
         }
@@ -161,9 +192,10 @@ class CoverRuntime(private val app: Application) {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_USER_PRESENT)
+            addAction(Intent.ACTION_USER_UNLOCKED)
         }
         // Exported: USER_PRESENT is sent by SystemUI, not the system uid, and a
-        // NOT_EXPORTED receiver never gets it. All three are protected broadcasts.
+        // NOT_EXPORTED receiver never gets it. All four are protected broadcasts.
         app.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
     }
 

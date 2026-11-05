@@ -73,9 +73,13 @@
         </intent>
     </queries>
 
+    <!-- directBootAware: the cover runs right after a reboot, before the first
+         unlock. Settings live in device protected storage (data/CoverPrefs.kt);
+         widgets and the app list wait for the unlock (service/CoverRuntime.kt). -->
     <application
         android:name=".FlipSlopApp"
         android:allowBackup="false"
+        android:directBootAware="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
@@ -163,6 +167,7 @@
             android:name=".service.BootReceiver"
             android:exported="true">
             <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
