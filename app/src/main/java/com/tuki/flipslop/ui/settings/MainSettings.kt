@@ -14,8 +14,10 @@ import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material3.FilterChip
 import androidx.compose.ui.graphics.Color
-import android.hardware.biometrics.BiometricManager
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.material.icons.rounded.Fingerprint
+import com.tuki.flipslop.unlock.SystemFingerprint
 import com.tuki.flipslop.data.CoverPage
 import com.tuki.flipslop.data.FingerprintUnlock
 import com.tuki.flipslop.unlock.TrustStatus
@@ -601,11 +603,21 @@ private fun lockRows(
     { shapes ->
         val trust by TrustUnlock.status.collectAsStateWithLifecycle()
         val context = LocalContext.current
-        val biometric = remember {
-            context.getSystemService(BiometricManager::class.java)
-                ?.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
-        }
-        ChoiceRow(
+        val biometric = remember { SystemFingerprint.enrolled(context) }
+        if (remember { SystemFingerprint.active(context) }) {
+            // SystemUI takes the fingerprint under the cover: nothing to choose, no prompt.
+            val row = navRow(
+                icon = Icons.Rounded.Fingerprint,
+                title = R.string.pref_fingerprint,
+                desc = if (biometric) R.string.fingerprint_system else R.string.fingerprint_no_biometric,
+                onClick = {
+                    runCatching {
+                        context.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                },
+            )
+            row(shapes)
+        } else ChoiceRow(
             title = R.string.pref_fingerprint,
             icon = Icons.Rounded.Fingerprint,
             options = FingerprintUnlock.entries,

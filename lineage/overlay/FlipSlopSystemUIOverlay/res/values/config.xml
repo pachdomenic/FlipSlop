@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- SystemUI keeps listening to the fingerprint sensor while FlipSlop's
+         cover sits over the keyguard (KeyguardUpdateMonitor), so a touch on
+         the sensor unlocks the cover lock screen just like the system lock
+         screen, with no biometric prompt (see unlock/SystemFingerprint.kt). -->
+    <string-array name="config_fingerprint_listen_on_occluding_activity_packages" translatable="false">
+        <item>com.tuki.flipslop</item>
+    </string-array>
+</resources>

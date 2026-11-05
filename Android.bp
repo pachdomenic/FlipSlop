@@ -71,6 +71,7 @@ android_app {
 
     required: [
         "FlipSlopFrameworksOverlay",
+        "FlipSlopSystemUIOverlay",
         "default-permissions-com.tuki.flipslop.xml",
         "privapp-permissions-com.tuki.flipslop.xml",
         "sysconfig-com.tuki.flipslop.xml",

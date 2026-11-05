@@ -1,7 +1,6 @@
 package com.tuki.flipslop.unlock
 
 import android.app.Activity
-import android.hardware.biometrics.BiometricManager
 import android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import android.hardware.biometrics.BiometricPrompt
 import android.os.CancellationSignal
@@ -18,9 +17,7 @@ class FingerprintPrompt(private val activity: Activity) {
     val showing: Boolean get() = signal != null
 
     /** A strong biometric is enrolled and usable. */
-    fun available(): Boolean =
-        activity.getSystemService(BiometricManager::class.java)?.canAuthenticate(BIOMETRIC_STRONG) ==
-            BiometricManager.BIOMETRIC_SUCCESS
+    fun available(): Boolean = SystemFingerprint.enrolled(activity)
 
     /**
      * Shows the prompt. [onSuccess] after a match; [onUseCredential] when the

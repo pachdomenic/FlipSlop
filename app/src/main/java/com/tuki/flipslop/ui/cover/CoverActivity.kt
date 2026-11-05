@@ -46,6 +46,7 @@ import com.tuki.flipslop.ui.settings.SettingsActivity
 import com.tuki.flipslop.ui.theme.FlipSlopTheme
 import com.tuki.flipslop.data.FingerprintUnlock
 import com.tuki.flipslop.unlock.FingerprintPrompt
+import com.tuki.flipslop.unlock.SystemFingerprint
 import com.tuki.flipslop.unlock.TrustUnlock
 import com.tuki.flipslop.widgets.WidgetAdder
 import kotlin.math.cos
@@ -194,6 +195,10 @@ class CoverActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        // Exported on purpose: USER_PRESENT comes from SystemUI (its own uid,
+        // not the system's), which a NOT_EXPORTED receiver never hears, and
+        // the cover then stayed on its lock screen after an unlock. All three
+        // are protected broadcasts, so no app can fake them.
         registerReceiver(
             keyguardReceiver,
             IntentFilter().apply {
@@ -201,7 +206,7 @@ class CoverActivity : ComponentActivity() {
                 addAction(Intent.ACTION_SCREEN_ON)
                 addAction(Intent.ACTION_SCREEN_OFF)
             },
-            RECEIVER_NOT_EXPORTED,
+            RECEIVER_EXPORTED,
         )
         refreshLocked()
         runtime.widgets.startListening()
@@ -265,9 +270,11 @@ class CoverActivity : ComponentActivity() {
     }
 
     /**
-     * Runs [block] now, or after the user unlocks on the cover: with a
-     * fingerprint when the trust agent can unlock (see unlock/), otherwise
-     * through the system bouncer.
+     * Runs [block] now, or after the user unlocks on the cover: through the
+     * system bouncer, or with the fingerprint prompt when only the trust agent
+     * can turn a fingerprint into an unlock (see unlock/). When SystemUI
+     * listens to the sensor itself ([SystemFingerprint]), a touch unlocks with
+     * no prompt at all and ACTION_USER_PRESENT brings the cover in.
      */
     private fun unlocked(block: () -> Unit) {
         if (!getSystemService(KeyguardManager::class.java).isKeyguardLocked) {
@@ -284,6 +291,8 @@ class CoverActivity : ComponentActivity() {
 
     private fun fingerprintUsable(): Boolean {
         val lock = runtime.settings.value.lock
+        // SystemUI takes the fingerprint itself: never put a prompt over the cover.
+        if (SystemFingerprint.active(this)) return false
         return lock.enabled && lock.fingerprint != FingerprintUnlock.OFF && TrustUnlock.ready && fingerprint.available()
     }
 
@@ -303,9 +312,15 @@ class CoverActivity : ComponentActivity() {
             showBouncer()
             return
         }
-        // Unlocked: ACTION_USER_PRESENT follows. If Android refused the grant, fall back.
+        // Unlocked: ACTION_USER_PRESENT follows. If Android refused the grant, fall back;
+        // if the broadcast is late, catch up with the keyguard ourselves.
         window.decorView.postDelayed({
-            if (getSystemService(KeyguardManager::class.java).isKeyguardLocked) showBouncer()
+            if (getSystemService(KeyguardManager::class.java).isKeyguardLocked) {
+                showBouncer()
+            } else {
+                locked = false
+                runAfterUnlock()
+            }
         }, TRUST_SETTLE_MS)
     }
 

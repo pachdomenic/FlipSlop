@@ -159,6 +159,7 @@
     <string name="fingerprint_agent_off">Включите «FlipSlop: разблокировка с обложки» в Настройки › Безопасность › Агенты доверия</string>
     <string name="fingerprint_waiting">Заработает после следующей разблокировки PIN-кодом или отпечатком на системном экране. После перезагрузки, через 24 часа без PIN-кода или 8 часов простоя Android снова попросит PIN</string>
     <string name="fingerprint_ready">Готово: приложите палец к сканеру на экране блокировки обложки</string>
+    <string name="fingerprint_system">Как на системном экране блокировки: приложите палец к сканеру, и обложка разблокируется без всяких окон. Боковому сканеру нужно «Разблокировка касанием в любое время» в настройках отпечатка</string>
     <string name="fingerprint_prompt_title">Разблокировка</string>
     <string name="fingerprint_prompt_subtitle">Приложите палец к сканеру</string>
     <string name="fingerprint_use_pin">PIN-код</string>

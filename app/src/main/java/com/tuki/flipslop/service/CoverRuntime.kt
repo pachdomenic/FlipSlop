@@ -162,7 +162,9 @@ class CoverRuntime(private val app: Application) {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_USER_PRESENT)
         }
-        app.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        // Exported: USER_PRESENT is sent by SystemUI, not the system uid, and a
+        // NOT_EXPORTED receiver never gets it. All three are protected broadcasts.
+        app.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
     }
 
     private companion object {

@@ -159,6 +159,7 @@
     <string name="fingerprint_agent_off">Turn on \"FlipSlop cover unlock\" under Settings › Security › Trust agents</string>
     <string name="fingerprint_waiting">Starts working after the next unlock with your PIN or fingerprint on the system lock screen. After a reboot, 24 hours without the PIN or 8 hours idle Android asks for the PIN again</string>
     <string name="fingerprint_ready">Ready: touch the sensor on the cover lock screen to unlock</string>
+    <string name="fingerprint_system">Like on the system lock screen: touch the sensor on the cover and it unlocks, no prompt. Side sensors need \"Touch to unlock anytime\" in the fingerprint settings</string>
     <string name="fingerprint_prompt_title">Unlock</string>
     <string name="fingerprint_prompt_subtitle">Touch the fingerprint sensor</string>
     <string name="fingerprint_use_pin">Use PIN</string>

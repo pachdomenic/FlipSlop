@@ -43,9 +43,11 @@ class CoverTrustAgent : TrustAgentService() {
         super.onCreate()
         TrustUnlock.agent = this
         publish()
+        // Not needed when SystemUI takes the fingerprint under the cover itself.
+        val systemFingerprint = SystemFingerprint.active(this)
         scope.launch {
             coverRuntime.settings
-                .map { it.lock.enabled && it.lock.fingerprint != FingerprintUnlock.OFF }
+                .map { it.lock.enabled && it.lock.fingerprint != FingerprintUnlock.OFF && !systemFingerprint }
                 .distinctUntilChanged()
                 .collect(::setEnabled)
         }
