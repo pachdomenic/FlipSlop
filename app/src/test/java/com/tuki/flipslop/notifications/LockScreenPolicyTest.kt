@@ -2,6 +2,8 @@ package com.tuki.flipslop.notifications
 
 import android.app.Notification
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -44,6 +46,7 @@ class LockScreenPolicyTest {
         val line = item(Notification.VISIBILITY_PRIVATE).forLockScreen(open, "hidden")!!
         assertEquals("Alex", line.title)
         assertEquals("Are we still on for tonight?", line.text)
+        assertTrue(line.full)
     }
 
     @Test
@@ -51,6 +54,8 @@ class LockScreenPolicyTest {
         val line = item(Notification.VISIBILITY_PRIVATE).forLockScreen(redacting, "hidden")!!
         assertEquals("Messages", line.title)
         assertEquals("hidden", line.text)
+        // A redacted card must not expand into the content it hides.
+        assertFalse(line.full)
     }
 
     @Test

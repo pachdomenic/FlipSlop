@@ -44,6 +44,7 @@ import com.tuki.flipslop.data.LockNotifications
 import com.tuki.flipslop.data.UnlockGesture
 import com.tuki.flipslop.media.MediaState
 import com.tuki.flipslop.notifications.CoverAction
+import com.tuki.flipslop.notifications.CoverMessage
 import com.tuki.flipslop.notifications.CoverNotification
 import com.tuki.flipslop.toggles.ToggleStates
 import com.tuki.flipslop.ui.cover.BatteryInfo
@@ -55,6 +56,7 @@ import com.tuki.flipslop.ui.theme.FlipSlopTheme
 import java.util.Calendar
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -130,6 +132,11 @@ class CoverScreenshotTest {
     @Test fun lockedMediaSheet() = shoot(CoverPage.HOME, name = "locked_media_sheet", tap = "Hinge Angle") {
         it.copy(locked = true, lock = LockConfig(layout = LockLayout.BIG_CLOCK))
     }
+    // Expanded: the whole conversation / text instead of one line.
+    @Test fun notificationsExpanded() = shoot(CoverPage.NOTIFICATIONS, name = "notifications_expanded", tapDescription = "Expand") {
+        it.copy(notificationStyle = NotificationStyle.DETAILED)
+    }
+    @Test fun notificationsCompactExpanded() = shoot(CoverPage.NOTIFICATIONS, name = "notifications_compact_expanded", tapDescription = "Expand")
     @Test fun lockedIdle() = shoot(CoverPage.HOME, name = "locked_idle") { it.copy(locked = true, media = null) }
     @Test fun appsCircle() = shoot(CoverPage.APPS, name = "apps_circle") { it.copy(iconShape = IconShapeStyle.CIRCLE) }
     @Test fun appsThemed() = shoot(CoverPage.APPS, name = "apps_themed") { it.copy(themedIcons = true) }
@@ -149,6 +156,8 @@ class CoverScreenshotTest {
         name: String = page.name.lowercase(),
         /** Text of something to tap before the shot. */
         tap: String? = null,
+        /** Content description of something to tap (the first match) before the shot. */
+        tapDescription: String? = null,
         tweak: (CoverUiState) -> CoverUiState = { it },
     ) {
         val base = tweak(sampleState())
@@ -174,6 +183,11 @@ class CoverScreenshotTest {
             }
         }
         compose.mainClock.advanceTimeBy(1_500)
+        if (tapDescription != null) {
+            compose.onAllNodesWithContentDescription(tapDescription)[0].performClick()
+            Snapshot.sendApplyNotifications()
+            compose.mainClock.advanceTimeBy(1_500)
+        }
         if (tap != null) {
             compose.onNodeWithText(tap).performClick()
             // With the clock driven by hand, state written by the click needs a nudge to recompose.
@@ -211,8 +225,20 @@ class CoverScreenshotTest {
             is24h = true,
             battery = BatteryInfo(76, charging = true),
             notifications = listOf(
-                notification("1", "Messages", "Alex", "Are we still on for tonight?", now - 4 * 60_000, reply = true, pi = pi),
-                notification("2", "Gmail", "LineageOS Gerrit", "arcfox: overlay: add cover panel cutout", now - 35 * 60_000, pi = pi),
+                notification(
+                    "1", "Messages", "Alex", "Are we still on for tonight?", now - 4 * 60_000, reply = true, pi = pi,
+                    messages = listOf(
+                        CoverMessage("Alex", "Did the cover build boot?", now - 30 * 60_000),
+                        CoverMessage(null, "Yep, flashing the new one now", now - 25 * 60_000),
+                        CoverMessage("Alex", "Are we still on for tonight?", now - 4 * 60_000),
+                    ),
+                ),
+                notification(
+                    "2", "Gmail", "LineageOS Gerrit", "arcfox: overlay: add cover panel cutout", now - 35 * 60_000, pi = pi,
+                    bigText = "arcfox: overlay: add cover panel cutout\n\nThe cover display reports a cutout for the " +
+                        "camera block; describe it so SystemUI keeps the status bar clear of the lenses. Verified-1 by CI.",
+                    subText = "review@lineageos.org",
+                ),
                 notification("3", "Calendar", "Standup", "In 15 minutes", now - 90 * 60_000, pi = pi),
             ),
             notificationAccess = true,
@@ -250,6 +276,9 @@ class CoverScreenshotTest {
         time: Long,
         pi: PendingIntent,
         reply: Boolean = false,
+        bigText: String? = null,
+        messages: List<CoverMessage> = emptyList(),
+        subText: String? = null,
     ) = CoverNotification(
         key = key,
         packageName = app.lowercase(),
@@ -270,6 +299,9 @@ class CoverScreenshotTest {
         } else {
             emptyList()
         },
+        bigText = bigText,
+        messages = messages,
+        subText = subText,
     )
 
     private fun art(): Bitmap {
