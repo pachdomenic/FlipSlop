@@ -112,6 +112,14 @@ fun CoverScreen(
         if (state.media == null) mediaSheet = false
     }
 
+    // Notification icons on the lock screen: the lock screen's Notifications page when there is
+    // one, otherwise the notifications slide, all without unlocking. Unlocking closes it.
+    var notificationsSheet by remember { mutableStateOf(false) }
+    BackHandler(enabled = notificationsSheet) { notificationsSheet = false }
+    LaunchedEffect(lockView) {
+        if (!lockView) notificationsSheet = false
+    }
+
     val edge = state.edgePaddingDp.dp
     val bottom = state.bottomInsetDp.dp
     val dock = state.dock
@@ -222,6 +230,7 @@ fun CoverScreen(
                     pages = lockPages,
                     pager = lockPager,
                     onOpenMedia = openMedia,
+                    onOpenNotifications = { notificationsSheet = true },
                     contentModifier = lockContent,
                     stripModifier = Modifier
                         .align(stripAlign)
@@ -328,6 +337,28 @@ fun CoverScreen(
                         onSelect = { scope.launch { pager.animateScrollToPage(it) } },
                     )
                 }
+            }
+
+            AnimatedVisibility(
+                visible = notificationsSheet && lockView,
+                enter = fadeIn() + slideInVertically { it / 3 },
+                exit = fadeOut() + slideOutVertically { it / 3 },
+            ) {
+                LockNotificationsSheet(
+                    state = state,
+                    actions = actions,
+                    onClose = { notificationsSheet = false },
+                    contentModifier = lockContent,
+                    stripModifier = Modifier
+                        .align(stripAlign)
+                        .fillMaxWidth()
+                        .height(stripHeight)
+                        .padding(
+                            start = if (cameraLeft) cameraWidth else edge,
+                            end = if (cameraLeft) edge else cameraWidth,
+                            bottom = DockMetrics.BottomMargin,
+                        ),
+                )
             }
 
             AnimatedVisibility(

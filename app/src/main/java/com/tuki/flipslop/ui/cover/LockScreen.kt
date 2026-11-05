@@ -79,6 +79,8 @@ fun LockScreen(
     stripModifier: Modifier,
     /** The music chip and the player card open the music slide. */
     onOpenMedia: () -> Unit = actions::mediaOpen,
+    /** Notification icons open the notifications slide when there is no Notifications page. */
+    onOpenNotifications: () -> Unit = actions::unlock,
 ) {
     val scope = rememberCoroutineScope()
     val hidden = stringResource(R.string.lock_contents_hidden)
@@ -102,7 +104,7 @@ fun LockScreen(
                 key = { pages[it].name },
             ) { index ->
                 when (pages[index]) {
-                    CoverPage.HOME -> LockHome(state, actions, lines, contentModifier, goTo, onOpenMedia)
+                    CoverPage.HOME -> LockHome(state, actions, lines, contentModifier, goTo, onOpenMedia, onOpenNotifications)
                     CoverPage.NOTIFICATIONS -> LockNotificationsPage(state, actions, lines, contentModifier)
                     CoverPage.MEDIA -> MediaPage(state, actions, contentModifier)
                     CoverPage.TOGGLES -> TogglesPage(state, actions, contentModifier)
@@ -111,7 +113,7 @@ fun LockScreen(
                 }
             }
         } else {
-            LockHome(state, actions, lines, contentModifier, goTo, onOpenMedia)
+            LockHome(state, actions, lines, contentModifier, goTo, onOpenMedia, onOpenNotifications)
         }
 
         // Beside the cameras: the hint (if it lives here), the chips, the page dots.
@@ -138,7 +140,7 @@ fun LockScreen(
                 ) {
                     DockNotifications(
                         state.copy(notifications = lines.map { it.item }),
-                        onClick = { if (!goTo(CoverPage.NOTIFICATIONS)) actions.unlock() },
+                        onClick = { if (!goTo(CoverPage.NOTIFICATIONS)) onOpenNotifications() },
                     )
                 }
                 if (pages.size > 1) {
@@ -162,6 +164,7 @@ private fun LockHome(
     modifier: Modifier,
     onOpenNotifications: (CoverPage) -> Boolean,
     onOpenMedia: () -> Unit,
+    onNotificationsSheet: () -> Unit,
 ) {
     val lock = state.lock
     // The player stays off the page when it is off altogether or sits beside the cameras.
@@ -173,7 +176,7 @@ private fun LockHome(
         {
             DockNotifications(
                 state.copy(notifications = lines.map { it.item }),
-                onClick = { if (!onOpenNotifications(CoverPage.NOTIFICATIONS)) actions.unlock() },
+                onClick = { if (!onOpenNotifications(CoverPage.NOTIFICATIONS)) onNotificationsSheet() },
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
@@ -232,9 +235,9 @@ private fun LockHomeBody(
     }
 }
 
-/** Notifications page while locked: the redacted cards, nothing to reply to or expand. */
+/** Notifications page while locked (and the notifications slide): the redacted cards, nothing to reply to. */
 @Composable
-private fun LockNotificationsPage(state: CoverUiState, actions: CoverActions, lines: List<LockLine>, modifier: Modifier) {
+internal fun LockNotificationsPage(state: CoverUiState, actions: CoverActions, lines: List<LockLine>, modifier: Modifier) {
     when {
         !state.lockPolicy.showNotifications -> EmptyState(
             icon = Icons.Rounded.NotificationsOff,
