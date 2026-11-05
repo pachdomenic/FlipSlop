@@ -13,6 +13,8 @@ data class LockLine(
     val item: CoverNotification,
     val title: String,
     val text: String,
+    /** The real content (not the redacted version): the card may expand to show all of it. */
+    val full: Boolean = true,
 )
 
 /**
@@ -25,6 +27,6 @@ fun CoverNotification.forLockScreen(policy: LockScreenPolicy, hiddenText: String
     return when {
         visibility == Notification.VISIBILITY_SECRET -> null
         visibility == Notification.VISIBILITY_PUBLIC || policy.showPrivateContent -> LockLine(this, title, text)
-        else -> LockLine(this, publicTitle ?: appLabel, publicText ?: hiddenText)
+        else -> LockLine(this, publicTitle ?: appLabel, publicText ?: hiddenText, full = false)
     }
 }

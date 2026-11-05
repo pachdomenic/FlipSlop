@@ -3,12 +3,15 @@ package com.tuki.flipslop.notifications
 import android.app.ActivityOptions
 import com.tuki.flipslop.core.ActivityStarts
 import android.app.Notification
+import android.app.Person
 import android.app.PendingIntent
 import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.Icon
 import android.os.Bundle
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
@@ -139,7 +142,37 @@ class NotificationsRepository(private val context: Context) {
             visibility = lockVisibility(sbn, ranking),
             publicTitle = n.publicVersion?.extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString(),
             publicText = n.publicVersion?.extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
+            bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()?.takeIf { it.isNotBlank() },
+            subText = (extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT) ?: extras.getCharSequence(Notification.EXTRA_SUB_TEXT))
+                ?.toString()?.takeIf { it.isNotBlank() },
+            lines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES).orEmpty()
+                .map { it.toString() }.filter { it.isNotBlank() },
+            messages = messages(extras),
+            picture = picture(extras),
+            progress = progress(extras),
         )
+    }
+
+    /** The conversation of a MessagingStyle notification, the last few messages, oldest first. */
+    private fun messages(extras: Bundle): List<CoverMessage> {
+        val bundles = extras.getParcelableArray(Notification.EXTRA_MESSAGES, Bundle::class.java) ?: return emptyList()
+        return bundles.takeLast(MAX_MESSAGES).mapNotNull { b ->
+            val text = b.getCharSequence(KEY_MESSAGE_TEXT)?.toString()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val sender = b.getCharSequence(KEY_MESSAGE_SENDER)
+                ?: b.getParcelable(KEY_MESSAGE_SENDER_PERSON, Person::class.java)?.name
+            CoverMessage(sender?.toString()?.takeIf { it.isNotBlank() }, text, b.getLong(KEY_MESSAGE_TIME))
+        }
+    }
+
+    private fun picture(extras: Bundle): Icon? =
+        extras.getParcelable(Notification.EXTRA_PICTURE_ICON, Icon::class.java)
+            ?: extras.getParcelable(Notification.EXTRA_PICTURE, Bitmap::class.java)?.let(Icon::createWithBitmap)
+
+    private fun progress(extras: Bundle): NotificationProgress? {
+        val max = extras.getInt(Notification.EXTRA_PROGRESS_MAX, 0)
+        val indeterminate = extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE, false)
+        if (max <= 0 && !indeterminate) return null
+        return NotificationProgress(extras.getInt(Notification.EXTRA_PROGRESS, 0), max, indeterminate)
     }
 
     /** The app's visibility, tightened by the user's lock screen choice for the channel. */
@@ -195,5 +228,12 @@ class NotificationsRepository(private val context: Context) {
 
     private companion object {
         const val TAG = "FlipSlop.Notifications"
+        const val MAX_MESSAGES = 8
+
+        // Keys of the message bundles in EXTRA_MESSAGES (Notification.MessagingStyle.Message).
+        const val KEY_MESSAGE_TEXT = "text"
+        const val KEY_MESSAGE_TIME = "time"
+        const val KEY_MESSAGE_SENDER = "sender"
+        const val KEY_MESSAGE_SENDER_PERSON = "sender_person"
     }
 }
