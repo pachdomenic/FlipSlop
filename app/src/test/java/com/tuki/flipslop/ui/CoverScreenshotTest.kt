@@ -54,7 +54,10 @@ import com.tuki.flipslop.ui.cover.NoopCoverActions
 import com.tuki.flipslop.ui.theme.FlipSlopTheme
 import java.util.Calendar
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -120,6 +123,13 @@ class CoverScreenshotTest {
             fingerprintUnlock = true,
         )
     }
+    // No Music page: the chip opens the music slide over the cover, unlocked and locked.
+    @Test fun mediaSheet() = shoot(CoverPage.HOME, name = "media_sheet", tap = "Hinge Angle") {
+        it.copy(homeStyle = HomeStyle.DOCK, pages = it.pages - CoverPage.MEDIA)
+    }
+    @Test fun lockedMediaSheet() = shoot(CoverPage.HOME, name = "locked_media_sheet", tap = "Hinge Angle") {
+        it.copy(locked = true, lock = LockConfig(layout = LockLayout.BIG_CLOCK))
+    }
     @Test fun lockedIdle() = shoot(CoverPage.HOME, name = "locked_idle") { it.copy(locked = true, media = null) }
     @Test fun appsCircle() = shoot(CoverPage.APPS, name = "apps_circle") { it.copy(iconShape = IconShapeStyle.CIRCLE) }
     @Test fun appsThemed() = shoot(CoverPage.APPS, name = "apps_themed") { it.copy(themedIcons = true) }
@@ -137,6 +147,8 @@ class CoverScreenshotTest {
         idle: Boolean = false,
         docked: Boolean = true,
         name: String = page.name.lowercase(),
+        /** Text of something to tap before the shot. */
+        tap: String? = null,
         tweak: (CoverUiState) -> CoverUiState = { it },
     ) {
         val base = tweak(sampleState())
@@ -162,6 +174,12 @@ class CoverScreenshotTest {
             }
         }
         compose.mainClock.advanceTimeBy(1_500)
+        if (tap != null) {
+            compose.onNodeWithText(tap).performClick()
+            // With the clock driven by hand, state written by the click needs a nudge to recompose.
+            Snapshot.sendApplyNotifications()
+            compose.mainClock.advanceTimeBy(1_500)
+        }
         compose.onRoot().captureRoboImage("screenshots/cover_$name.png")
     }
 
