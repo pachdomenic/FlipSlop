@@ -57,7 +57,10 @@ import com.tuki.flipslop.R
 import com.tuki.flipslop.data.NotificationStyle
 import com.tuki.flipslop.notifications.CoverNotification
 import com.tuki.flipslop.notifications.LockLine
+import androidx.compose.animation.animateContentSize
 import com.tuki.flipslop.ui.cover.CompactNotificationCard
+import com.tuki.flipslop.ui.cover.ExpandButton
+import com.tuki.flipslop.ui.cover.NotificationDetails
 import com.tuki.flipslop.ui.components.IconImage
 import com.tuki.flipslop.ui.cover.CoverActions
 import com.tuki.flipslop.ui.cover.CoverUiState
@@ -143,10 +146,15 @@ private fun NotificationCard(
 ) {
     DismissibleNotification(item, actions, modifier) {
         var replying by rememberSaveable(item.key) { mutableStateOf<String?>(null) }
+        var expanded by rememberSaveable(item.key) { mutableStateOf(false) }
+        var textCut by remember(item.key) { mutableStateOf(false) }
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
-            modifier = Modifier.fillMaxWidth().clickable { actions.openNotification(item) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
+                .clickable { actions.openNotification(item) },
         ) {
             Column(Modifier.padding(14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -172,20 +180,32 @@ private fun NotificationCard(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (item.hasDetails || textCut || expanded) {
+                        Spacer(Modifier.width(8.dp))
+                        ExpandButton(expanded, onClick = { expanded = !expanded })
+                    }
                 }
                 Spacer(Modifier.size(8.dp))
                 Row(verticalAlignment = Alignment.Top) {
                     Column(Modifier.weight(1f)) {
                         if (item.title.isNotBlank()) {
-                            Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                item.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = if (expanded) 3 else 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                         }
-                        if (item.text.isNotBlank()) {
+                        if (expanded) {
+                            NotificationDetails(item, Modifier.padding(top = 4.dp))
+                        } else if (item.text.isNotBlank()) {
                             Text(
                                 item.text,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 3,
                                 overflow = TextOverflow.Ellipsis,
+                                onTextLayout = { if (it.hasVisualOverflow) textCut = true },
                             )
                         }
                     }
@@ -198,7 +218,7 @@ private fun NotificationCard(
                 }
                 if (item.actions.isNotEmpty()) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        item.actions.take(3).forEach { action ->
+                        item.actions.take(MAX_ACTIONS).forEach { action ->
                             TextButton(onClick = {
                                 if (action.isReply) replying = "" else actions.runAction(action)
                             }) { Text(action.title, maxLines = 1) }
@@ -277,3 +297,5 @@ internal fun EmptyState(
     }
 }
 
+
+private const val MAX_ACTIONS = 3

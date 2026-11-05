@@ -118,6 +118,9 @@
     <string name="lock_hint_double_tap">Double-tap or swipe up to unlock</string>
     <string name="open_media_controls">Music controls</string>
     <string name="media_sheet_close">Close</string>
+    <string name="notification_expand">Expand</string>
+    <string name="notification_collapse">Collapse</string>
+    <string name="notification_you">You</string>
     <string name="unlock">Unlock</string>
     <string name="pref_lock_minimal">Cover lock screen</string>
     <string name="pref_lock_minimal_desc">While locked the cover shows its own lock screen; off shows the whole cover over the keyguard</string>

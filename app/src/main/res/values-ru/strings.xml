@@ -118,6 +118,9 @@
     <string name="lock_hint_double_tap">Нажмите дважды или проведите вверх, чтобы разблокировать</string>
     <string name="open_media_controls">Управление музыкой</string>
     <string name="media_sheet_close">Свернуть</string>
+    <string name="notification_expand">Развернуть</string>
+    <string name="notification_collapse">Свернуть</string>
+    <string name="notification_you">Вы</string>
     <string name="unlock">Разблокировать</string>
     <string name="pref_lock_minimal">Свой экран блокировки</string>
     <string name="pref_lock_minimal_desc">Пока телефон заблокирован, на обложке свой экран блокировки; если выключить, поверх блокировки будет вся обложка</string>

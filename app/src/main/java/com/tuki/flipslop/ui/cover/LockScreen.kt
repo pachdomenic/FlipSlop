@@ -155,7 +155,11 @@ private fun LockHome(
                 // The big clock keeps most of the page: fewer cards, and the player as a pill.
                 cards.take(if (shown.media != null) 1 else 2).forEach { line ->
                     Spacer(Modifier.height(6.dp))
-                    CompactNotificationCard(line, onClick = { actions.openNotification(line.item) })
+                    CompactNotificationCard(
+                        line,
+                        onClick = { actions.openNotification(line.item) },
+                        maxDetailsHeight = CARD_DETAILS_MAX,
+                    )
                 }
                 if (shown.media != null) {
                     Spacer(Modifier.height(8.dp))

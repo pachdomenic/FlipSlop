@@ -2,6 +2,15 @@ package com.tuki.flipslop.ui.cover
 
 import android.os.SystemClock
 import android.text.format.DateFormat
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -103,7 +112,7 @@ internal fun CardsLayout(
         }
         shown.forEach { line ->
             Spacer(Modifier.height(6.dp))
-            CompactNotificationCard(line, onClick = { actions.openNotification(line.item) })
+            CompactNotificationCard(line, onClick = { actions.openNotification(line.item) }, maxDetailsHeight = CARD_DETAILS_MAX)
         }
         if (more > 0 && onMore != null) {
             TextButton(onClick = onMore, modifier = Modifier.align(Alignment.End)) {
@@ -245,42 +254,80 @@ internal fun MediaCard(state: CoverUiState, actions: CoverActions, onOpen: (() -
     }
 }
 
-/** One notification as a compact card: app icon, title, one line of text. */
+/**
+ * One notification as a compact card: app icon, title, one line of text.
+ * When there is more to it (a longer text, a conversation, a picture...)
+ * the chevron expands the card in place to show all of it. Redacted lock
+ * screen lines never expand. [maxDetailsHeight] bounds the expanded part
+ * (it scrolls) where the card shares a page with the clock.
+ */
 @Composable
-internal fun CompactNotificationCard(line: LockLine, onClick: () -> Unit) {
+internal fun CompactNotificationCard(line: LockLine, onClick: () -> Unit, maxDetailsHeight: Dp? = null) {
     val item = line.item
+    var expanded by rememberSaveable(item.key) { mutableStateOf(false) }
+    var textCut by remember(item.key) { mutableStateOf(false) }
+    val expandable = line.full && (item.hasDetails || textCut || expanded)
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
+            .clickable(onClick = onClick),
     ) {
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                IconImage(
-                    item.smallIcon,
-                    size = 16.dp,
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer),
-                    fallback = item.appIcon,
-                )
-            }
-            Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) {
-                Text(line.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (line.text.isNotBlank()) {
-                    Text(
-                        line.text,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    IconImage(
+                        item.smallIcon,
+                        size = 16.dp,
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer),
+                        fallback = item.appIcon,
                     )
                 }
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        line.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = if (expanded) 2 else 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    // Expanded, the details below say it all.
+                    if (line.text.isNotBlank() && !expanded) {
+                        Text(
+                            line.text,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            onTextLayout = { if (it.hasVisualOverflow) textCut = true },
+                        )
+                    }
+                }
+                if (expandable) {
+                    Spacer(Modifier.width(6.dp))
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                        ExpandButton(expanded, onClick = { expanded = !expanded })
+                    }
+                }
+            }
+            if (expanded && line.full) {
+                val bounded = if (maxDetailsHeight != null) {
+                    Modifier.heightIn(max = maxDetailsHeight).verticalScroll(rememberScrollState())
+                } else {
+                    Modifier
+                }
+                NotificationDetails(item, Modifier.padding(start = 38.dp, top = 6.dp, bottom = 4.dp).then(bounded))
             }
         }
     }
 }
 
 internal const val MAX_CARD_NOTIFICATIONS = 3
+
+/** An expanded card next to the clock scrolls past this height. */
+internal val CARD_DETAILS_MAX = 160.dp
