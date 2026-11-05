@@ -39,6 +39,7 @@ import com.tuki.flipslop.data.HomeStyle
 import com.tuki.flipslop.data.NotificationStyle
 import com.tuki.flipslop.data.IconShapeStyle
 import com.tuki.flipslop.data.LockConfig
+import com.tuki.flipslop.data.LockHintPosition
 import com.tuki.flipslop.data.LockLayout
 import com.tuki.flipslop.data.LockNotifications
 import com.tuki.flipslop.data.UnlockGesture
@@ -137,6 +138,13 @@ class CoverScreenshotTest {
         it.copy(notificationStyle = NotificationStyle.DETAILED)
     }
     @Test fun notificationsCompactExpanded() = shoot(CoverPage.NOTIFICATIONS, name = "notifications_compact_expanded", tapDescription = "Expand")
+    // The hint back beside the cameras and no chips there: the player stays on the page.
+    @Test fun lockedClassicStrip() = shoot(CoverPage.HOME, name = "locked_classic") {
+        it.copy(
+            locked = true,
+            lock = LockConfig(hintPosition = LockHintPosition.STRIP, stripMedia = false, stripNotifications = false),
+        )
+    }
     @Test fun lockedIdle() = shoot(CoverPage.HOME, name = "locked_idle") { it.copy(locked = true, media = null) }
     @Test fun appsCircle() = shoot(CoverPage.APPS, name = "apps_circle") { it.copy(iconShape = IconShapeStyle.CIRCLE) }
     @Test fun appsThemed() = shoot(CoverPage.APPS, name = "apps_themed") { it.copy(themedIcons = true) }
