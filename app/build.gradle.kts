@@ -14,6 +14,15 @@ val keystoreProps = Properties().apply {
     if (f.exists()) f.inputStream().use { load(it) }
 }
 
+// Optional platform signing: a platform.properties (same keys) pointing at a
+// keystore made from the ROM's platform key (lineage/platform-keystore.sh).
+// Signs debug and release, so builds update the platform-signed system app
+// over adb and keep ACCESS_SHORTCUTS.
+val platformProps = Properties().apply {
+    val f = rootProject.file("platform.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
 android {
     namespace = "com.tuki.flipslop"
     compileSdk = 37
@@ -28,6 +37,14 @@ android {
     }
 
     signingConfigs {
+        if (platformProps.isNotEmpty()) {
+            create("platform") {
+                storeFile = rootProject.file(platformProps.getProperty("storeFile"))
+                storePassword = platformProps.getProperty("storePassword")
+                keyAlias = platformProps.getProperty("keyAlias")
+                keyPassword = platformProps.getProperty("keyPassword")
+            }
+        }
         if (keystoreProps.isNotEmpty()) {
             create("release") {
                 storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
@@ -39,11 +56,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfigs.findByName("platform")?.let { signingConfig = it }
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("platform")
+                ?: signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
         }
     }
 

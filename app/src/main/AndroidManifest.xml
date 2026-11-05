@@ -15,6 +15,12 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <!-- "Uninstall" in an app's long-press menu (the system asks to confirm) -->
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <!-- Every app's shortcuts (dynamic ones too) in the long-press menu, as the
+         home screen shows them. signature|recents|role: only granted when
+         FlipSlop is signed with the ROM's platform key (lineage/Android.bp). -->
+    <uses-permission
+        android:name="android.permission.ACCESS_SHORTCUTS"
+        tools:ignore="ProtectedPermissions" />
 
     <!-- Special access the user grants in Settings (onboarding walks through them) -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />

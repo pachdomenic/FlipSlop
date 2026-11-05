@@ -54,6 +54,9 @@
     <string name="app_info">App info</string>
     <string name="app_uninstall">Uninstall</string>
     <string name="app_menu">Options</string>
+    <string name="diag_shortcuts">App shortcuts</string>
+    <string name="diag_shortcuts_all">All, as on the home screen</string>
+    <string name="diag_shortcuts_manifest">Only the ones from app manifests: needs the system build signed with the platform key</string>
 
     <string name="widgets_empty">No widgets on the cover yet</string>
     <string name="widgets_add">Add widget</string>

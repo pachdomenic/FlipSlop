@@ -3,6 +3,9 @@
 build/
 local.properties
 keystore.properties
+platform.properties
+*.pk8
+*.p12
 *.jks
 *.keystore
 .idea/

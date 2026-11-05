@@ -5,6 +5,7 @@ import android.app.AppOpsManager
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.os.Process
 import android.provider.Settings
@@ -35,6 +36,8 @@ data class CapabilityState(
     val systemIconTheme: Boolean = false,
     /** Privileged PROVIDE_TRUST_AGENT: fingerprint unlock from the cover lock screen. */
     val trustAgent: Boolean = false,
+    /** ACCESS_SHORTCUTS (platform-signed build) or default launcher: every app's shortcuts. */
+    val allShortcuts: Boolean = false,
     val isSystemApp: Boolean = false,
 ) {
     val tier: Tier
@@ -65,6 +68,9 @@ object Capabilities {
             deviceStateApi = deviceStateApi,
             systemIconTheme = systemIconTheme,
             trustAgent = granted(context, PERMISSION_PROVIDE_TRUST_AGENT),
+            allShortcuts = granted(context, PERMISSION_ACCESS_SHORTCUTS) || runCatching {
+                context.getSystemService(LauncherApps::class.java).hasShortcutHostPermission()
+            }.getOrDefault(false),
             isSystemApp = (context.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
         )
     }
@@ -91,4 +97,5 @@ object Capabilities {
 
     const val PERMISSION_BACKGROUND_STARTS = "android.permission.START_ACTIVITIES_FROM_BACKGROUND"
     const val PERMISSION_PROVIDE_TRUST_AGENT = "android.permission.PROVIDE_TRUST_AGENT"
+    const val PERMISSION_ACCESS_SHORTCUTS = "android.permission.ACCESS_SHORTCUTS"
 }

@@ -45,13 +45,16 @@ data class AppEntry(
 }
 
 /**
- * One of an app's shortcuts ("New message", "Selfie"...). Comes from
- * ShortcutManager when FlipSlop may read shortcuts (it is the default
- * launcher), otherwise straight from the app's manifest.
+ * One of an app's shortcuts ("New message", "Start recording"...): the same
+ * ones the home screen shows, from ShortcutManager, when FlipSlop holds
+ * ACCESS_SHORTCUTS (platform-signed system build). Otherwise only the ones the
+ * app declares in its manifest.
  */
 class AppShortcut(
     val label: String,
     val icon: Drawable?,
+    /** Shown instead of [label] when it fits, as the home screen does. */
+    val longLabel: String? = null,
     internal val info: ShortcutInfo? = null,
     internal val intents: List<Intent> = emptyList(),
 )
@@ -207,12 +210,15 @@ class AppsRepository(
         }
     }
 
-    private fun shortcuts(entry: AppEntry): List<AppShortcut> {
-        val host = runCatching { launcherApps.hasShortcutHostPermission() }.getOrDefault(false)
-        return if (host) hostShortcuts(entry) else manifestShortcuts(entry)
-    }
+    private fun shortcuts(entry: AppEntry): List<AppShortcut> =
+        // SecurityException without ACCESS_SHORTCUTS (and not the default launcher).
+        runCatching { hostShortcuts(entry) }.getOrNull() ?: manifestShortcuts(entry)
 
-    /** Static and dynamic shortcuts through LauncherApps, as the default launcher. */
+    /**
+     * Static and dynamic shortcuts through LauncherApps, picked and ordered as
+     * Launcher3 does (PopupPopulator): manifest ones first, each group by rank,
+     * four at most.
+     */
     private fun hostShortcuts(entry: AppEntry): List<AppShortcut> {
         val query = LauncherApps.ShortcutQuery()
             .setPackage(entry.component.packageName)
@@ -225,9 +231,14 @@ class AppsRepository(
             .sortedWith(compareBy({ !it.isDeclaredInManifest }, { it.rank }))
             .take(MAX_SHORTCUTS)
             .mapNotNull { info ->
-                val label = (info.shortLabel ?: info.longLabel)?.toString()?.takeIf { it.isNotBlank() }
-                    ?: return@mapNotNull null
-                AppShortcut(label, runCatching { launcherApps.getShortcutIconDrawable(info, density) }.getOrNull(), info)
+                val short = info.shortLabel?.toString()?.takeIf { it.isNotBlank() }
+                val long = info.longLabel?.toString()?.takeIf { it.isNotBlank() }
+                AppShortcut(
+                    label = short ?: long ?: return@mapNotNull null,
+                    icon = runCatching { launcherApps.getShortcutIconDrawable(info, density) }.getOrNull(),
+                    longLabel = long,
+                    info = info,
+                )
             }
     }
 
@@ -250,6 +261,7 @@ class AppsRepository(
     private fun parseShortcuts(parser: XmlResourceParser, res: Resources): List<AppShortcut> {
         val out = mutableListOf<AppShortcut>()
         var label: String? = null
+        var longLabel: String? = null
         var iconRes = 0
         var enabled = false
         var intents = mutableListOf<Intent>()
@@ -257,7 +269,8 @@ class AppsRepository(
         while (event != XmlPullParser.END_DOCUMENT) {
             if (event == XmlPullParser.START_TAG && parser.name == "shortcut") {
                 enabled = parser.getAttributeBooleanValue(ANDROID_NS, "enabled", true)
-                label = parser.string(res, "shortcutShortLabel") ?: parser.string(res, "shortcutLongLabel")
+                longLabel = parser.string(res, "shortcutLongLabel")
+                label = parser.string(res, "shortcutShortLabel") ?: longLabel
                 iconRes = parser.getAttributeResourceValue(ANDROID_NS, "icon", 0)
                 intents = mutableListOf()
             } else if (event == XmlPullParser.START_TAG && parser.name == "intent") {
@@ -271,7 +284,7 @@ class AppsRepository(
                     // As ShortcutManager does: the stack starts in a fresh task.
                     intents.first().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     val icon = iconRes.takeIf { it != 0 }?.let { runCatching { res.getDrawable(it, null) }.getOrNull() }
-                    out += AppShortcut(text, icon, intents = intents)
+                    out += AppShortcut(text, icon, longLabel, intents = intents)
                 }
             }
             event = parser.next()

@@ -55,6 +55,9 @@
     <string name="app_info">О приложении</string>
     <string name="app_uninstall">Удалить</string>
     <string name="app_menu">Действия</string>
+    <string name="diag_shortcuts">Ярлыки приложений</string>
+    <string name="diag_shortcuts_all">Все, как на главном экране</string>
+    <string name="diag_shortcuts_manifest">Только из манифестов приложений: нужна системная сборка с платформенной подписью</string>
 
     <string name="widgets_empty">На обложке пока нет виджетов</string>
     <string name="widgets_add">Добавить виджет</string>

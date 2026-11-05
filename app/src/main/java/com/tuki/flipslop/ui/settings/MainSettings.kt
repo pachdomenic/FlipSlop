@@ -1107,6 +1107,15 @@ private fun diagnosticsRows(
             append(states)
         }),
         { shapes ->
+            SettingsItem(
+                onClick = {},
+                shapes = shapes,
+                supportingContent = {
+                    Text(stringResource(if (caps.allShortcuts) R.string.diag_shortcuts_all else R.string.diag_shortcuts_manifest))
+                },
+            ) { Text(stringResource(R.string.diag_shortcuts)) }
+        },
+        { shapes ->
             val scope = rememberCoroutineScope()
             val known by runtime.prefs.knownPanels.collectAsStateWithLifecycle(emptySet())
             SettingsItem(

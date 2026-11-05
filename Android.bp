@@ -30,6 +30,10 @@ android_app {
 
     privileged: true,
     system_ext_specific: true,
+    // ACCESS_SHORTCUTS (signature): the long-press menu shows every app's
+    // shortcuts like the home screen. Gradle builds must use the same key to
+    // update this app over adb: see lineage/platform-keystore.sh.
+    certificate: "platform",
 
     // Keep in sync with versionCode / versionName in app/build.gradle.kts.
     aaptflags: [
