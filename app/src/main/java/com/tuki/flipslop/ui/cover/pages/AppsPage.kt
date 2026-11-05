@@ -15,16 +15,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.rounded.Apps
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,7 +31,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -167,7 +159,7 @@ private fun AppCell(
                 textAlign = TextAlign.Center,
             )
         }
-        AppMenuPopup(
+        AppPopup(
             app = app,
             menu = menu,
             pinned = pinned,
@@ -176,67 +168,4 @@ private fun AppCell(
             onDismiss = { menu = null },
         )
     }
-}
-
-/** The app's shortcuts, then pin / unpin, app info and uninstall. */
-@Composable
-private fun AppMenuPopup(
-    app: AppEntry,
-    menu: AppMenu?,
-    pinned: Boolean,
-    themed: Boolean,
-    actions: CoverActions,
-    onDismiss: () -> Unit,
-) {
-    // Keep the last contents while the menu animates out.
-    var shown by remember { mutableStateOf(AppMenu()) }
-    if (menu != null) shown = menu
-    DropdownMenu(
-        expanded = menu != null,
-        onDismissRequest = onDismiss,
-        shape = MaterialTheme.shapes.large,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        shown.shortcuts.forEach { shortcut ->
-            DropdownMenuItem(
-                text = { Text(shortcut.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                leadingIcon = {
-                    ShapedAppIcon(shortcut.icon ?: app.icon, CircleShape, size = 28.dp, themed = themed)
-                },
-                onClick = {
-                    onDismiss()
-                    actions.launchShortcut(shortcut)
-                },
-            )
-        }
-        if (shown.shortcuts.isNotEmpty()) {
-            HorizontalDivider(Modifier.padding(vertical = 4.dp))
-        }
-        MenuAction(
-            icon = if (pinned) Icons.Outlined.PushPin else Icons.Rounded.PushPin,
-            text = stringResource(if (pinned) R.string.unpin else R.string.pin),
-        ) {
-            onDismiss()
-            actions.togglePin(app)
-        }
-        MenuAction(Icons.Rounded.Info, stringResource(R.string.app_info)) {
-            onDismiss()
-            actions.openAppInfo(app)
-        }
-        if (shown.canUninstall) {
-            MenuAction(Icons.Rounded.Delete, stringResource(R.string.app_uninstall)) {
-                onDismiss()
-                actions.uninstallApp(app)
-            }
-        }
-    }
-}
-
-@Composable
-private fun MenuAction(icon: ImageVector, text: String, onClick: () -> Unit) {
-    DropdownMenuItem(
-        text = { Text(text) },
-        leadingIcon = { Icon(icon, contentDescription = null) },
-        onClick = onClick,
-    )
 }
