@@ -159,6 +159,10 @@ class CoverScreenshotTest {
     @Test fun apps() = shoot(CoverPage.APPS)
     // Long-press: the app's shortcuts, pin, app info and uninstall.
     @Test fun appsMenu() = shoot(CoverPage.APPS, name = "apps_menu", longPress = "Camera", actions = menuActions())
+    // No shortcuts: pin, app info and uninstall as a labelled list.
+    @Test fun appsMenuPlain() = shoot(CoverPage.APPS, name = "apps_menu_plain", longPress = "Maps", actions = object : CoverActions {
+        override suspend fun appMenu(entry: AppEntry) = AppMenu(canUninstall = true)
+    })
     @Test fun widgets() = shoot(CoverPage.WIDGETS)
     @Test fun toggles() = shoot(CoverPage.TOGGLES)
 
@@ -226,8 +230,9 @@ class CoverScreenshotTest {
     private fun menuActions() = object : CoverActions {
         override suspend fun appMenu(entry: AppEntry) = AppMenu(
             shortcuts = listOf(
-                AppShortcut("Selfie", context.getDrawable(android.R.drawable.ic_menu_camera)),
-                AppShortcut("Video", context.getDrawable(android.R.drawable.ic_media_play)),
+                AppShortcut("Record", context.getDrawable(android.R.drawable.ic_menu_camera), longLabel = "Start recording"),
+                AppShortcut("Selfie", context.getDrawable(android.R.drawable.ic_menu_gallery)),
+                AppShortcut("Inbox", context.getDrawable(android.R.drawable.ic_dialog_email), longLabel = "A label far too long to fit in the popup"),
             ),
             canUninstall = true,
         )
