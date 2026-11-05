@@ -51,6 +51,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tuki.flipslop.R
@@ -78,6 +79,8 @@ fun HomePage(
     actions: CoverActions,
     onOpenNotifications: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Music chips and the player card open the music slide. */
+    onOpenMedia: () -> Unit = actions::mediaOpen,
 ) {
     if (state.homeStyle == HomeStyle.BIG_CLOCK) {
         BigClock(state, modifier)
@@ -97,6 +100,7 @@ fun HomePage(
             modifier = modifier,
             moreCount = state.notifications.size - lines.size,
             onMore = onOpenNotifications,
+            onOpenMedia = onOpenMedia,
         )
         return
     }
@@ -110,7 +114,7 @@ fun HomePage(
         // Whatever lives in the camera dock is not repeated here.
         val media = state.media
         if (media != null && !state.dock.media) {
-            MiniMedia(state, actions)
+            MiniMedia(state, actions, onOpenMedia)
         } else if (state.notifications.isNotEmpty() && !state.dock.notifications) {
             NotificationSummary(state, onOpenNotifications)
         }
@@ -267,13 +271,15 @@ internal fun Digits(value: String, style: androidx.compose.ui.text.TextStyle, co
 }
 
 @Composable
-private fun MiniMedia(state: CoverUiState, actions: CoverActions) {
+private fun MiniMedia(state: CoverUiState, actions: CoverActions, onOpen: () -> Unit) {
     val media = state.media ?: return
     val art = remember(media.art) { media.art?.asImageBitmap() }
     Surface(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = actions::mediaOpen),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClickLabel = stringResource(R.string.open_media_controls), onClick = onOpen),
     ) {
         Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (art != null) {

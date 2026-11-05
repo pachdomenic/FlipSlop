@@ -98,6 +98,19 @@ fun CoverScreen(
         if (lockView) lockPager.scrollToPage(lockHome)
     }
 
+    // Music chips and the player card go to the Music page (or the lock screen's Music page)
+    // when there is one, and open the music slide over everything when there is not.
+    var mediaSheet by remember { mutableStateOf(false) }
+    val openMedia: () -> Unit = {
+        val (shown, shownPager) = if (lockView) lockPages to lockPager else pages to pager
+        val i = shown.indexOf(CoverPage.MEDIA)
+        if (i >= 0) scope.launch { shownPager.animateScrollToPage(i) } else mediaSheet = true
+    }
+    BackHandler(enabled = mediaSheet) { mediaSheet = false }
+    LaunchedEffect(state.media == null) {
+        if (state.media == null) mediaSheet = false
+    }
+
     val edge = state.edgePaddingDp.dp
     val bottom = state.bottomInsetDp.dp
     val dock = state.dock
@@ -178,20 +191,25 @@ fun CoverScreen(
             val cameraWidth = dock.cameraWidthDp.dp.coerceIn(0.dp, maxOf(0.dp, maxWidth - MinDockWidth))
             val cameraLeft = dock.cameraSide == CameraSide.LEFT
 
+            // The lock screen and the music slide: one page above the strip beside the cameras.
+            val stripAlign = if (cameraLeft) Alignment.BottomEnd else Alignment.BottomStart
+            val stripHeight = maxOf(bottom, 56.dp)
+            val lockContent = Modifier
+                .fillMaxSize()
+                .padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = stripHeight + 8.dp)
+
             if (lockView) {
-                val stripAlign = if (cameraLeft) Alignment.BottomEnd else Alignment.BottomStart
                 LockScreen(
                     state = state,
                     actions = actions,
                     pages = lockPages,
                     pager = lockPager,
-                    contentModifier = Modifier
-                        .fillMaxSize()
-                        .padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = maxOf(bottom, 56.dp) + 8.dp),
+                    onOpenMedia = openMedia,
+                    contentModifier = lockContent,
                     stripModifier = Modifier
                         .align(stripAlign)
                         .fillMaxWidth()
-                        .height(maxOf(bottom, 56.dp))
+                        .height(stripHeight)
                         .padding(
                             start = if (cameraLeft) cameraWidth else edge,
                             end = if (cameraLeft) edge else cameraWidth,
@@ -213,6 +231,7 @@ fun CoverScreen(
                             state = state,
                             actions = actions,
                             onOpenNotifications = { goTo(CoverPage.NOTIFICATIONS) },
+                            onOpenMedia = openMedia,
                             modifier = pageModifier,
                         )
                         CoverPage.NOTIFICATIONS -> NotificationsPage(state, actions, pageModifier)
@@ -222,15 +241,6 @@ fun CoverScreen(
                         CoverPage.TOGGLES -> TogglesPage(state, actions, pageModifier)
                     }
                 }
-            }
-
-            if (state.showCameraGuide && cameraWidth > 0.dp && bottom > 0.dp) {
-                CameraGuide(
-                    width = cameraWidth,
-                    height = bottom,
-                    outerSideIsEnd = !cameraLeft,
-                    modifier = Modifier.align(if (cameraLeft) Alignment.BottomStart else Alignment.BottomEnd),
-                )
             }
 
             if (!lockView) {
@@ -265,7 +275,7 @@ fun CoverScreen(
                                 DockMedia(
                                     state = state,
                                     actions = actions,
-                                    onClick = { if (!goTo(CoverPage.MEDIA)) actions.mediaOpen() },
+                                    onClick = openMedia,
                                 )
                             }
                             AnimatedVisibility(
@@ -301,6 +311,37 @@ fun CoverScreen(
                         onSelect = { scope.launch { pager.animateScrollToPage(it) } },
                     )
                 }
+            }
+
+            AnimatedVisibility(
+                visible = mediaSheet && state.media != null,
+                enter = fadeIn() + slideInVertically { it / 3 },
+                exit = fadeOut() + slideOutVertically { it / 3 },
+            ) {
+                MediaSheet(
+                    state = state,
+                    actions = actions,
+                    onClose = { mediaSheet = false },
+                    contentModifier = lockContent,
+                    stripModifier = Modifier
+                        .align(stripAlign)
+                        .fillMaxWidth()
+                        .height(stripHeight)
+                        .padding(
+                            start = if (cameraLeft) cameraWidth else edge,
+                            end = if (cameraLeft) edge else cameraWidth,
+                            bottom = DockMetrics.BottomMargin,
+                        ),
+                )
+            }
+
+            if (state.showCameraGuide && cameraWidth > 0.dp && bottom > 0.dp) {
+                CameraGuide(
+                    width = cameraWidth,
+                    height = bottom,
+                    outerSideIsEnd = !cameraLeft,
+                    modifier = Modifier.align(if (cameraLeft) Alignment.BottomStart else Alignment.BottomEnd),
+                )
             }
         }
     }

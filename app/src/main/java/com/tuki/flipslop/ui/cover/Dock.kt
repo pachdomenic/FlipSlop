@@ -188,7 +188,7 @@ fun DockNotifications(state: CoverUiState, onClick: () -> Unit, modifier: Modifi
     }
 }
 
-/** Now playing pill: art, title, play/pause. Tapping it opens the media page. */
+/** Now playing pill: art, title, play/pause. Tapping it anywhere else opens the music slide. */
 @Composable
 fun DockMedia(state: CoverUiState, actions: CoverActions, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val media = state.media ?: return
@@ -199,7 +199,7 @@ fun DockMedia(state: CoverUiState, actions: CoverActions, onClick: () -> Unit, m
         modifier = modifier
             .height(DockMetrics.MediaHeight)
             .widthIn(max = DockMetrics.MediaMaxWidth)
-            .clickable(onClick = onClick),
+            .clickable(onClickLabel = stringResource(R.string.open_media_controls), onClick = onClick),
     ) {
         Box(contentAlignment = Alignment.CenterStart) {
         if (state.mediaArtBackground && art != null) {
@@ -208,13 +208,12 @@ fun DockMedia(state: CoverUiState, actions: CoverActions, onClick: () -> Unit, m
             Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.45f)))
         }
         Row(Modifier.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            // The art opens the player itself; the rest of the pill opens the media page.
+            // A tap on the art belongs to the chip too; the slide's big art opens the player.
             Box(
                 Modifier
                     .size(32.dp)
                     .clip(MaterialShapes.Cookie9Sided.toShape())
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                    .clickable(onClickLabel = stringResource(R.string.open_player), onClick = actions::mediaOpen),
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
                 if (art != null) {

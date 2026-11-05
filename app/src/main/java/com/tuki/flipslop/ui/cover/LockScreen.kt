@@ -66,6 +66,8 @@ fun LockScreen(
     modifier: Modifier = Modifier,
     contentModifier: Modifier,
     stripModifier: Modifier,
+    /** The music chip and the player card open the music slide. */
+    onOpenMedia: () -> Unit = actions::mediaOpen,
 ) {
     val scope = rememberCoroutineScope()
     val hidden = stringResource(R.string.lock_contents_hidden)
@@ -89,7 +91,7 @@ fun LockScreen(
                 key = { pages[it].name },
             ) { index ->
                 when (pages[index]) {
-                    CoverPage.HOME -> LockHome(state, actions, lines, contentModifier, onOpenNotifications = goTo)
+                    CoverPage.HOME -> LockHome(state, actions, lines, contentModifier, goTo, onOpenMedia)
                     CoverPage.NOTIFICATIONS -> LockNotificationsPage(state, actions, lines, contentModifier)
                     CoverPage.MEDIA -> MediaPage(state, actions, contentModifier)
                     CoverPage.TOGGLES -> TogglesPage(state, actions, contentModifier)
@@ -98,7 +100,7 @@ fun LockScreen(
                 }
             }
         } else {
-            LockHome(state, actions, lines, contentModifier, onOpenNotifications = goTo)
+            LockHome(state, actions, lines, contentModifier, goTo, onOpenMedia)
         }
 
         Box(stripModifier, contentAlignment = Alignment.Center) {
@@ -127,6 +129,7 @@ private fun LockHome(
     lines: List<LockLine>,
     modifier: Modifier,
     onOpenNotifications: (CoverPage) -> Boolean,
+    onOpenMedia: () -> Unit,
 ) {
     val lock = state.lock
     val shown = if (lock.media) state else state.copy(media = null)
@@ -145,7 +148,7 @@ private fun LockHome(
 
     Box(Modifier.fillMaxSize().unlockGestures(lock.gesture, actions::unlock)) {
         when (lock.layout) {
-            LockLayout.CARDS -> CardsLayout(shown, actions, cards, modifier, belowClock = icons)
+            LockLayout.CARDS -> CardsLayout(shown, actions, cards, modifier, belowClock = icons, onOpenMedia = onOpenMedia)
             LockLayout.BIG_CLOCK -> Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
                 BigClock(shown, Modifier.weight(1f).fillMaxWidth())
                 icons?.invoke()
@@ -159,7 +162,7 @@ private fun LockHome(
                     DockMedia(
                         shown,
                         actions,
-                        onClick = { if (!onOpenNotifications(CoverPage.MEDIA)) actions.mediaOpen() },
+                        onClick = onOpenMedia,
                     )
                 }
             }

@@ -86,6 +86,8 @@ internal fun CardsLayout(
     onMore: (() -> Unit)? = null,
     /** Something small between the clock and the cards (the lock screen's notification icons). */
     belowClock: (@Composable () -> Unit)? = null,
+    /** Tapping the player card (not its art or buttons) opens the music slide. */
+    onOpenMedia: (() -> Unit)? = null,
 ) {
     // The cover is short: with the player out, one notification card leaves the clock room.
     val room = if (state.media != null) 1 else MAX_CARD_NOTIFICATIONS
@@ -110,7 +112,7 @@ internal fun CardsLayout(
         }
         if (state.media != null) {
             Spacer(Modifier.height(8.dp))
-            MediaCard(state, actions)
+            MediaCard(state, actions, onOpenMedia)
         }
     }
 }
@@ -154,7 +156,7 @@ internal fun CardsClock(state: CoverUiState, stacked: Boolean, available: Float)
 
 /** Compact player: art, title, progress with times, transport controls. */
 @Composable
-internal fun MediaCard(state: CoverUiState, actions: CoverActions) {
+internal fun MediaCard(state: CoverUiState, actions: CoverActions, onOpen: (() -> Unit)? = null) {
     val media = state.media ?: return
     val art = remember(media.art) { media.art?.asImageBitmap() }
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
@@ -170,7 +172,15 @@ internal fun MediaCard(state: CoverUiState, actions: CoverActions) {
     Surface(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onOpen != null) {
+                    Modifier.clickable(onClickLabel = stringResource(R.string.open_media_controls), onClick = onOpen)
+                } else {
+                    Modifier
+                },
+            ),
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
