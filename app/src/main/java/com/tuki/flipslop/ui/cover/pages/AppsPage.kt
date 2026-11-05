@@ -15,9 +15,16 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,10 +32,13 @@ import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -37,11 +47,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tuki.flipslop.R
 import com.tuki.flipslop.apps.AppEntry
+import com.tuki.flipslop.apps.AppMenu
 import com.tuki.flipslop.data.IconShapeStyle
 import com.tuki.flipslop.ui.components.ShapedAppIcon
 import com.tuki.flipslop.ui.components.rememberIconShape
 import com.tuki.flipslop.ui.cover.CoverActions
 import com.tuki.flipslop.ui.cover.CoverUiState
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppsPage(state: CoverUiState, actions: CoverActions, modifier: Modifier = Modifier) {
@@ -96,8 +108,7 @@ fun AppsPage(state: CoverUiState, actions: CoverActions, modifier: Modifier = Mo
                         showPinMark = showAll,
                         iconShape = state.iconShape,
                         themed = state.themedIcons,
-                        onClick = { actions.launchApp(app) },
-                        onLongClick = { actions.togglePin(app) },
+                        actions = actions,
                     )
                 }
             }
@@ -105,6 +116,7 @@ fun AppsPage(state: CoverUiState, actions: CoverActions, modifier: Modifier = Mo
     }
 }
 
+/** An app in the grid: tap opens it, long-press brings up its menu. */
 @Composable
 private fun AppCell(
     app: AppEntry,
@@ -113,43 +125,118 @@ private fun AppCell(
     showPinMark: Boolean,
     iconShape: IconShapeStyle,
     themed: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
+    actions: CoverActions,
 ) {
     val haptics = LocalHapticFeedback.current
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onLongClick()
-                },
-                onLongClickLabel = stringResource(if (pinned) R.string.unpin else R.string.pin),
-            )
-            .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(contentAlignment = Alignment.TopEnd) {
-            ShapedAppIcon(app.icon, rememberIconShape(index, iconShape), size = 64.dp, themed = themed)
-            if (showPinMark && pinned) {
-                Icon(
-                    Icons.Rounded.PushPin,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp),
+    val scope = rememberCoroutineScope()
+    // Non-null while the menu is up; loaded first so it opens at its full size.
+    var menu by remember { mutableStateOf<AppMenu?>(null) }
+    Box {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = { actions.launchApp(app) },
+                    onLongClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        scope.launch { menu = runCatching { actions.appMenu(app) }.getOrDefault(AppMenu()) }
+                    },
+                    onLongClickLabel = stringResource(R.string.app_menu),
                 )
+                .padding(vertical = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(contentAlignment = Alignment.TopEnd) {
+                ShapedAppIcon(app.icon, rememberIconShape(index, iconShape), size = 64.dp, themed = themed)
+                if (showPinMark && pinned) {
+                    Icon(
+                        Icons.Rounded.PushPin,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                app.label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
         }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            app.label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
+        AppMenuPopup(
+            app = app,
+            menu = menu,
+            pinned = pinned,
+            themed = themed,
+            actions = actions,
+            onDismiss = { menu = null },
         )
     }
+}
+
+/** The app's shortcuts, then pin / unpin, app info and uninstall. */
+@Composable
+private fun AppMenuPopup(
+    app: AppEntry,
+    menu: AppMenu?,
+    pinned: Boolean,
+    themed: Boolean,
+    actions: CoverActions,
+    onDismiss: () -> Unit,
+) {
+    // Keep the last contents while the menu animates out.
+    var shown by remember { mutableStateOf(AppMenu()) }
+    if (menu != null) shown = menu
+    DropdownMenu(
+        expanded = menu != null,
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.large,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        shown.shortcuts.forEach { shortcut ->
+            DropdownMenuItem(
+                text = { Text(shortcut.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                leadingIcon = {
+                    ShapedAppIcon(shortcut.icon ?: app.icon, CircleShape, size = 28.dp, themed = themed)
+                },
+                onClick = {
+                    onDismiss()
+                    actions.launchShortcut(shortcut)
+                },
+            )
+        }
+        if (shown.shortcuts.isNotEmpty()) {
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+        }
+        MenuAction(
+            icon = if (pinned) Icons.Outlined.PushPin else Icons.Rounded.PushPin,
+            text = stringResource(if (pinned) R.string.unpin else R.string.pin),
+        ) {
+            onDismiss()
+            actions.togglePin(app)
+        }
+        MenuAction(Icons.Rounded.Info, stringResource(R.string.app_info)) {
+            onDismiss()
+            actions.openAppInfo(app)
+        }
+        if (shown.canUninstall) {
+            MenuAction(Icons.Rounded.Delete, stringResource(R.string.app_uninstall)) {
+                onDismiss()
+                actions.uninstallApp(app)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuAction(icon: ImageVector, text: String, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = { Text(text) },
+        leadingIcon = { Icon(icon, contentDescription = null) },
+        onClick = onClick,
+    )
 }

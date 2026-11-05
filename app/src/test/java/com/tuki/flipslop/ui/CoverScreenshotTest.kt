@@ -24,7 +24,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
 import com.tuki.flipslop.apps.AppEntry
+import com.tuki.flipslop.apps.AppMenu
+import com.tuki.flipslop.apps.AppShortcut
 import com.tuki.flipslop.core.DeviceProfile
 import com.tuki.flipslop.data.ClockAlign
 import com.tuki.flipslop.data.ClockColor
@@ -49,6 +52,7 @@ import com.tuki.flipslop.notifications.CoverMessage
 import com.tuki.flipslop.notifications.CoverNotification
 import com.tuki.flipslop.toggles.ToggleStates
 import com.tuki.flipslop.ui.cover.BatteryInfo
+import com.tuki.flipslop.ui.cover.CoverActions
 import com.tuki.flipslop.ui.cover.CoverScreen
 import com.tuki.flipslop.ui.cover.CoverUiState
 import com.tuki.flipslop.ui.cover.DockConfig
@@ -60,7 +64,9 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -151,6 +157,8 @@ class CoverScreenshotTest {
     @Test fun notifications() = shoot(CoverPage.NOTIFICATIONS)
     @Test fun media() = shoot(CoverPage.MEDIA)
     @Test fun apps() = shoot(CoverPage.APPS)
+    // Long-press: the app's shortcuts, pin, app info and uninstall.
+    @Test fun appsMenu() = shoot(CoverPage.APPS, name = "apps_menu", longPress = "Camera", actions = menuActions())
     @Test fun widgets() = shoot(CoverPage.WIDGETS)
     @Test fun toggles() = shoot(CoverPage.TOGGLES)
 
@@ -166,6 +174,9 @@ class CoverScreenshotTest {
         tap: String? = null,
         /** Content description of something to tap (the first match) before the shot. */
         tapDescription: String? = null,
+        /** Text of something to long-press before the shot; the shot then takes in popups too. */
+        longPress: String? = null,
+        actions: CoverActions = NoopCoverActions,
         tweak: (CoverUiState) -> CoverUiState = { it },
     ) {
         val base = tweak(sampleState())
@@ -186,7 +197,7 @@ class CoverScreenshotTest {
                         .background(Brush.linearGradient(listOf(Color(0xFF3B4A7A), Color(0xFF7A3B6B), Color(0xFF1E2B3A)))),
                 ) {
                     // 33dp: arcfox status_bar_height_portrait. Robolectric draws no status bar.
-                    CoverScreen(state = state, actions = NoopCoverActions, initialPage = page, topInset = 33.dp)
+                    CoverScreen(state = state, actions = actions, initialPage = page, topInset = 33.dp)
                 }
             }
         }
@@ -202,7 +213,24 @@ class CoverScreenshotTest {
             Snapshot.sendApplyNotifications()
             compose.mainClock.advanceTimeBy(1_500)
         }
+        if (longPress != null) {
+            compose.onNodeWithText(longPress).performTouchInput { longClick() }
+            Snapshot.sendApplyNotifications()
+            compose.mainClock.advanceTimeBy(1_500)
+            captureScreenRoboImage("screenshots/cover_$name.png")
+            return
+        }
         compose.onRoot().captureRoboImage("screenshots/cover_$name.png")
+    }
+
+    private fun menuActions() = object : CoverActions {
+        override suspend fun appMenu(entry: AppEntry) = AppMenu(
+            shortcuts = listOf(
+                AppShortcut("Selfie", context.getDrawable(android.R.drawable.ic_menu_camera)),
+                AppShortcut("Video", context.getDrawable(android.R.drawable.ic_media_play)),
+            ),
+            canUninstall = true,
+        )
     }
 
     private fun sampleState(): CoverUiState {

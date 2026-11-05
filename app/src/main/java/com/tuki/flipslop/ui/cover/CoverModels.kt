@@ -1,6 +1,8 @@
 package com.tuki.flipslop.ui.cover
 
 import com.tuki.flipslop.apps.AppEntry
+import com.tuki.flipslop.apps.AppMenu
+import com.tuki.flipslop.apps.AppShortcut
 import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.data.ClockConfig
 import com.tuki.flipslop.data.HomeStyle
@@ -89,6 +91,12 @@ interface CoverActions {
 
     fun launchApp(entry: AppEntry) {}
     fun togglePin(entry: AppEntry) {}
+
+    /** What the app's long-press menu shows besides pinning. */
+    suspend fun appMenu(entry: AppEntry): AppMenu = AppMenu()
+    fun launchShortcut(shortcut: AppShortcut) {}
+    fun openAppInfo(entry: AppEntry) {}
+    fun uninstallApp(entry: AppEntry) {}
 
     fun addWidget() {}
 

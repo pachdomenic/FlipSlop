@@ -37,6 +37,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.tuki.flipslop.R
 import com.tuki.flipslop.apps.AppEntry
+import com.tuki.flipslop.apps.AppShortcut
 import com.tuki.flipslop.coverRuntime
 import com.tuki.flipslop.fold.FoldState
 import com.tuki.flipslop.notifications.CoverAction
@@ -402,6 +403,10 @@ class CoverActivity : ComponentActivity() {
 
         override fun launchApp(entry: AppEntry) = runtime.apps.launch(this@CoverActivity, entry)
         override fun togglePin(entry: AppEntry) = runtime.apps.togglePin(entry)
+        override suspend fun appMenu(entry: AppEntry) = runtime.apps.menu(entry)
+        override fun launchShortcut(shortcut: AppShortcut) = runtime.apps.launchShortcut(this@CoverActivity, shortcut)
+        override fun openAppInfo(entry: AppEntry) = runtime.apps.openAppInfo(this@CoverActivity, entry)
+        override fun uninstallApp(entry: AppEntry) = runtime.apps.uninstall(this@CoverActivity, entry)
 
         override fun addWidget() {
             pickingWidget = true
