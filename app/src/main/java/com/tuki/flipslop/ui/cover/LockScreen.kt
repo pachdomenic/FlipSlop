@@ -36,6 +36,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tuki.flipslop.R
 import com.tuki.flipslop.data.CoverPage
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import com.tuki.flipslop.data.LockHintPosition
 import com.tuki.flipslop.data.LockLayout
 import com.tuki.flipslop.data.LockNotifications
 import com.tuki.flipslop.data.UnlockGesture
@@ -54,8 +64,9 @@ import kotlinx.coroutines.launch
  * prompt); once the device unlocks the full cover takes over.
  *
  * [pages] / [pager] are the locked pages (LockConfig.pages); [contentModifier]
- * places a page above the camera strip, [stripModifier] the page dots and the
- * unlock hint beside the cameras.
+ * places a page above the camera strip, [stripModifier] what sits beside the
+ * cameras: the music and notification chips, the page dots and, if set
+ * there, the unlock hint (by default it is at the top of the page).
  */
 @Composable
 fun LockScreen(
@@ -103,12 +114,33 @@ fun LockScreen(
             LockHome(state, actions, lines, contentModifier, goTo, onOpenMedia)
         }
 
+        // Beside the cameras: the hint (if it lives here), the chips, the page dots.
         Box(stripModifier, contentAlignment = Alignment.Center) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(DockMetrics.Gap),
             ) {
-                if (state.lock.hint) UnlockHint(state, onClick = actions::unlock)
+                val lock = state.lock
+                if (lock.hintPosition == LockHintPosition.STRIP) UnlockHint(state, onClick = actions::unlock)
+                // A chip steps aside on its own page, like the dock's.
+                val target = pages.getOrNull(pager.targetPage)
+                AnimatedVisibility(
+                    visible = lock.mediaInStrip(state.media != null) && target != CoverPage.MEDIA,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    DockMedia(state, actions, onClick = onOpenMedia)
+                }
+                AnimatedVisibility(
+                    visible = lock.notificationsInStrip(lines.isNotEmpty()) && target != CoverPage.NOTIFICATIONS,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    DockNotifications(
+                        state.copy(notifications = lines.map { it.item }),
+                        onClick = { if (!goTo(CoverPage.NOTIFICATIONS)) actions.unlock() },
+                    )
+                }
                 if (pages.size > 1) {
                     PageDots(
                         pages = pages.size,
@@ -132,9 +164,12 @@ private fun LockHome(
     onOpenMedia: () -> Unit,
 ) {
     val lock = state.lock
-    val shown = if (lock.media) state else state.copy(media = null)
+    // The player stays off the page when it is off altogether or sits beside the cameras.
+    val shown = if (lock.media && !lock.mediaInStrip(state.media != null)) state else state.copy(media = null)
     val cards = if (lock.notifications == LockNotifications.CARDS) lines else emptyList()
-    val icons: (@Composable () -> Unit)? = if (lock.notifications == LockNotifications.ICONS && lines.isNotEmpty()) {
+    val iconsHere = lock.notifications == LockNotifications.ICONS && lines.isNotEmpty() &&
+        !lock.notificationsInStrip(lines.isNotEmpty())
+    val icons: (@Composable () -> Unit)? = if (iconsHere) {
         {
             DockNotifications(
                 state.copy(notifications = lines.map { it.item }),
@@ -147,28 +182,51 @@ private fun LockHome(
     }
 
     Box(Modifier.fillMaxSize().unlockGestures(lock.gesture, actions::unlock)) {
-        when (lock.layout) {
-            LockLayout.CARDS -> CardsLayout(shown, actions, cards, modifier, belowClock = icons, onOpenMedia = onOpenMedia)
-            LockLayout.BIG_CLOCK -> Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-                BigClock(shown, Modifier.weight(1f).fillMaxWidth())
-                icons?.invoke()
-                // The big clock keeps most of the page: fewer cards, and the player as a pill.
-                cards.take(if (shown.media != null) 1 else 2).forEach { line ->
-                    Spacer(Modifier.height(6.dp))
-                    CompactNotificationCard(
-                        line,
-                        onClick = { actions.openNotification(line.item) },
-                        maxDetailsHeight = CARD_DETAILS_MAX,
-                    )
-                }
-                if (shown.media != null) {
-                    Spacer(Modifier.height(8.dp))
-                    DockMedia(
-                        shown,
-                        actions,
-                        onClick = onOpenMedia,
-                    )
-                }
+        Column(modifier) {
+            if (lock.hintPosition == LockHintPosition.TOP) {
+                UnlockHint(
+                    state,
+                    onClick = actions::unlock,
+                    inline = true,
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 4.dp),
+                )
+            }
+            LockHomeBody(state, actions, shown, cards, icons, onOpenMedia, Modifier.weight(1f).fillMaxWidth())
+        }
+    }
+}
+
+@Composable
+private fun LockHomeBody(
+    state: CoverUiState,
+    actions: CoverActions,
+    shown: CoverUiState,
+    cards: List<LockLine>,
+    icons: (@Composable () -> Unit)?,
+    onOpenMedia: () -> Unit,
+    modifier: Modifier,
+) {
+    when (state.lock.layout) {
+        LockLayout.CARDS -> CardsLayout(shown, actions, cards, modifier, belowClock = icons, onOpenMedia = onOpenMedia)
+        LockLayout.BIG_CLOCK -> Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+            BigClock(shown, Modifier.weight(1f).fillMaxWidth())
+            icons?.invoke()
+            // The big clock keeps most of the page: fewer cards, and the player as a pill.
+            cards.take(if (shown.media != null) 1 else 2).forEach { line ->
+                Spacer(Modifier.height(6.dp))
+                CompactNotificationCard(
+                    line,
+                    onClick = { actions.openNotification(line.item) },
+                    maxDetailsHeight = CARD_DETAILS_MAX,
+                )
+            }
+            if (shown.media != null) {
+                Spacer(Modifier.height(8.dp))
+                DockMedia(
+                    shown,
+                    actions,
+                    onClick = onOpenMedia,
+                )
             }
         }
     }
@@ -202,13 +260,36 @@ private fun LockNotificationsPage(state: CoverUiState, actions: CoverActions, li
 
 /** Lock glyph and how to get in; tapping it always unlocks, whatever the gesture. */
 @Composable
-private fun UnlockHint(state: CoverUiState, onClick: () -> Unit) {
+private fun UnlockHint(
+    state: CoverUiState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** One line (glyph and text side by side), for the top of the page. */
+    inline: Boolean = false,
+) {
+    val glyph = if (state.fingerprintUnlock) Icons.Rounded.Fingerprint else Icons.Rounded.Lock
+    val clickable = modifier
+        .clip(RoundedCornerShape(50))
+        .clickable(onClickLabel = stringResource(R.string.unlock), onClick = onClick)
+    if (inline) {
+        Row(clickable.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(glyph, contentDescription = null, tint = MaterialTheme.colorScheme.primaryFixed, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(
+                stringResource(state.lock.gesture.hintRes),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+        return
+    }
     Column(
-        Modifier.clickable(onClickLabel = stringResource(R.string.unlock), onClick = onClick).padding(4.dp),
+        clickable.padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
-            if (state.fingerprintUnlock) Icons.Rounded.Fingerprint else Icons.Rounded.Lock,
+            glyph,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primaryFixed,
             modifier = Modifier.size(22.dp),

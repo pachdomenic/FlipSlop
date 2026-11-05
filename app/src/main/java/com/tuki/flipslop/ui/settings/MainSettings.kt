@@ -21,13 +21,13 @@ import com.tuki.flipslop.data.FingerprintUnlock
 import com.tuki.flipslop.unlock.TrustStatus
 import com.tuki.flipslop.unlock.TrustUnlock
 import com.tuki.flipslop.data.LockConfig
+import com.tuki.flipslop.data.LockHintPosition
 import com.tuki.flipslop.data.LockLayout
 import com.tuki.flipslop.data.LockNotifications
 import com.tuki.flipslop.data.LockTabCandidates
 import com.tuki.flipslop.data.UnlockGesture
 import com.tuki.flipslop.ui.cover.icon
 import com.tuki.flipslop.ui.cover.labelRes
-import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material.icons.rounded.ViewAgenda
 import com.tuki.flipslop.data.ClockAlign
@@ -626,8 +626,23 @@ private fun lockRows(
             ),
         ) { f -> scope.launch { prefs.setFingerprintUnlock(f) } }
     },
-    switchRow(Icons.Rounded.Lightbulb, R.string.pref_lock_hint, R.string.pref_lock_hint_desc, lock.hint) {
-        scope.launch { prefs.setLockHint(it) }
+    { shapes ->
+        ChoiceRow(
+            title = R.string.pref_lock_hint,
+            icon = Icons.Rounded.Lock,
+            options = LockHintPosition.entries,
+            selected = lock.hintPosition,
+            label = { stringResource(it.labelRes) },
+            shapes = shapes,
+        ) { p -> scope.launch { prefs.setLockHintPosition(p) } }
+    },
+    { shapes ->
+        LockStripRow(
+            lock,
+            shapes,
+            onMedia = { scope.launch { prefs.setLockStripMedia(it) } },
+            onNotifications = { scope.launch { prefs.setLockStripNotifications(it) } },
+        )
     },
 )
 
@@ -672,6 +687,47 @@ private val FingerprintUnlock.shortLabelRes: Int
         FingerprintUnlock.OFF -> R.string.fingerprint_mode_off
         FingerprintUnlock.ON_GESTURE -> R.string.fingerprint_mode_gesture_short
         FingerprintUnlock.IMMEDIATE -> R.string.fingerprint_mode_immediate_short
+    }
+
+/** What sits beside the cameras on the lock screen, as chips. */
+@Composable
+private fun LockStripRow(lock: LockConfig, shapes: Shape, onMedia: (Boolean) -> Unit, onNotifications: (Boolean) -> Unit) {
+    SettingsItem(
+        onClick = {},
+        shapes = shapes,
+        leadingContent = { Icon(Icons.Rounded.PhotoCamera, contentDescription = null) },
+        supportingContent = {
+            Column {
+                Text(stringResource(R.string.pref_lock_strip_desc))
+                FlowRow(
+                    Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FilterChip(
+                        selected = lock.stripMedia,
+                        onClick = { onMedia(!lock.stripMedia) },
+                        enabled = lock.media,
+                        label = { Text(stringResource(R.string.lock_strip_media)) },
+                        leadingIcon = { Icon(Icons.Rounded.MusicNote, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    )
+                    FilterChip(
+                        selected = lock.stripNotifications,
+                        onClick = { onNotifications(!lock.stripNotifications) },
+                        enabled = lock.notifications == LockNotifications.ICONS,
+                        label = { Text(stringResource(R.string.lock_strip_notifications)) },
+                        leadingIcon = { Icon(Icons.Rounded.Notifications, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    )
+                }
+            }
+        },
+    ) { Text(stringResource(R.string.pref_lock_strip)) }
+}
+
+private val LockHintPosition.labelRes: Int
+    get() = when (this) {
+        LockHintPosition.TOP -> R.string.lock_hint_top
+        LockHintPosition.STRIP -> R.string.lock_hint_strip
+        LockHintPosition.HIDDEN -> R.string.lock_hint_hidden
     }
 
 private val LockNotifications.labelRes: Int

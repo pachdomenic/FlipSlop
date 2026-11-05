@@ -165,8 +165,14 @@
     <string name="trust_agent_label">FlipSlop: разблокировка с обложки</string>
     <string name="trust_agent_summary">Разрешает разблокировать телефон отпечатком на экране блокировки обложки</string>
     <string name="trust_agent_message">Разблокировано с обложки</string>
-    <string name="pref_lock_hint">Подсказка</string>
-    <string name="pref_lock_hint_desc">Замок и как разблокировать, возле камер</string>
+    <string name="pref_lock_hint">Значок замка и подсказка</string>
+    <string name="lock_hint_top">Сверху</string>
+    <string name="lock_hint_strip">У камер</string>
+    <string name="lock_hint_hidden">Скрыт</string>
+    <string name="pref_lock_strip">Возле камер</string>
+    <string name="pref_lock_strip_desc">Чипы рядом с блоком камер. Чип музыки убирает плеер со страницы, и часам достаётся больше места; значки уведомлений переезжают сюда в режиме «Значки»</string>
+    <string name="lock_strip_media">Музыка</string>
+    <string name="lock_strip_notifications">Значки уведомлений</string>
     <string name="pref_return_home">«Домой» возвращает на обложку</string>
     <string name="pref_return_home_desc">Кнопка «Домой» на обложке ведёт в FlipSlop, а не в обычный лаунчер</string>
     <string name="pref_return_home_needs_usage">Нужен доступ к истории использования</string>

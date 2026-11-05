@@ -165,8 +165,14 @@
     <string name="trust_agent_label">FlipSlop cover unlock</string>
     <string name="trust_agent_summary">Lets a fingerprint on the cover lock screen unlock the phone</string>
     <string name="trust_agent_message">Unlocked from the cover</string>
-    <string name="pref_lock_hint">Unlock hint</string>
-    <string name="pref_lock_hint_desc">The lock and how to unlock, beside the cameras</string>
+    <string name="pref_lock_hint">Lock icon and hint</string>
+    <string name="lock_hint_top">At the top</string>
+    <string name="lock_hint_strip">By the cameras</string>
+    <string name="lock_hint_hidden">Hidden</string>
+    <string name="pref_lock_strip">Beside the cameras</string>
+    <string name="pref_lock_strip_desc">Chips next to the camera block. The music chip takes the player off the page so the clock gets the room; notification icons move there in the Icons mode</string>
+    <string name="lock_strip_media">Music</string>
+    <string name="lock_strip_notifications">Notification icons</string>
     <string name="pref_return_home">Home returns to the cover</string>
     <string name="pref_return_home_desc">Home on the cover goes back to FlipSlop instead of the regular launcher</string>
     <string name="pref_return_home_needs_usage">Needs usage access</string>

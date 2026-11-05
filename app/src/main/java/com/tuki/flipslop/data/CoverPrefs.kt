@@ -131,7 +131,12 @@ class CoverPrefs(context: Context) {
                     .filter { it in LockTabCandidates }
                     .toSet(),
                 gesture = p[LOCK_GESTURE].toEnum(UnlockGesture.TAP_OR_SWIPE),
-                hint = p[LOCK_HINT] ?: true,
+                // The old switch only knew "beside the cameras" or "off".
+                hintPosition = p[LOCK_HINT_POSITION].toEnum(
+                    if (p[LOCK_HINT] == false) LockHintPosition.HIDDEN else LockHintPosition.TOP,
+                ),
+                stripMedia = p[LOCK_STRIP_MEDIA] ?: true,
+                stripNotifications = p[LOCK_STRIP_NOTIFICATIONS] ?: true,
                 fingerprint = p[LOCK_FINGERPRINT].toEnum(FingerprintUnlock.IMMEDIATE),
             ),
             cameraSide = p[CAMERA_SIDE]?.let { runCatching { CameraSide.valueOf(it) }.getOrNull() }
@@ -195,7 +200,9 @@ class CoverPrefs(context: Context) {
         p[LOCK_TABS] = if (shown) current + page.name else current - page.name
     }
     suspend fun setUnlockGesture(gesture: UnlockGesture) = store.edit { it[LOCK_GESTURE] = gesture.name }
-    suspend fun setLockHint(value: Boolean) = store.edit { it[LOCK_HINT] = value }
+    suspend fun setLockHintPosition(position: LockHintPosition) = store.edit { it[LOCK_HINT_POSITION] = position.name }
+    suspend fun setLockStripMedia(value: Boolean) = store.edit { it[LOCK_STRIP_MEDIA] = value }
+    suspend fun setLockStripNotifications(value: Boolean) = store.edit { it[LOCK_STRIP_NOTIFICATIONS] = value }
     suspend fun setFingerprintUnlock(mode: FingerprintUnlock) = store.edit { it[LOCK_FINGERPRINT] = mode.name }
     suspend fun setCameraSide(side: CameraSide) = store.edit { it[CAMERA_SIDE] = side.name }
     suspend fun setCameraWidth(dp: Int) = store.edit { it[CAMERA_WIDTH] = dp.coerceIn(0, MAX_CAMERA_WIDTH_DP) }
@@ -286,6 +293,9 @@ class CoverPrefs(context: Context) {
         private val LOCK_TABS = stringSetPreferencesKey("lock_tabs")
         private val LOCK_GESTURE = stringPreferencesKey("lock_gesture")
         private val LOCK_HINT = booleanPreferencesKey("lock_hint")
+        private val LOCK_HINT_POSITION = stringPreferencesKey("lock_hint_position")
+        private val LOCK_STRIP_MEDIA = booleanPreferencesKey("lock_strip_media")
+        private val LOCK_STRIP_NOTIFICATIONS = booleanPreferencesKey("lock_strip_notifications")
         private val LOCK_FINGERPRINT = stringPreferencesKey("lock_fingerprint")
         private val CAMERA_SIDE = stringPreferencesKey("camera_side")
         private val CAMERA_WIDTH = intPreferencesKey("camera_width_dp")

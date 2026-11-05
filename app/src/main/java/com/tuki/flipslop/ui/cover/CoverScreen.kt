@@ -55,6 +55,7 @@ import com.tuki.flipslop.R
 import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.data.CoverPage
 import com.tuki.flipslop.data.HomeStyle
+import com.tuki.flipslop.data.LockHintPosition
 import com.tuki.flipslop.ui.cover.pages.AppsPage
 import com.tuki.flipslop.ui.cover.pages.HomePage
 import com.tuki.flipslop.ui.cover.pages.MediaPage
@@ -193,7 +194,23 @@ fun CoverScreen(
 
             // The lock screen and the music slide: one page above the strip beside the cameras.
             val stripAlign = if (cameraLeft) Alignment.BottomEnd else Alignment.BottomStart
-            val stripHeight = maxOf(bottom, 56.dp)
+            // Locked, the strip may hold the hint, the chips and the page dots: make room for them.
+            val lockStripRows = if (!lockView) {
+                emptyList()
+            } else {
+                listOfNotNull(
+                    LockHintHeight.takeIf { state.lock.hintPosition == LockHintPosition.STRIP },
+                    DockMetrics.MediaHeight.takeIf { state.lock.mediaInStrip(state.media != null) },
+                    DockMetrics.NotificationsHeight.takeIf { state.lock.notificationsInStrip(state.notifications.isNotEmpty()) },
+                    DockMetrics.DotsHeight.takeIf { lockPages.size > 1 },
+                )
+            }
+            val lockStripNeeded = if (lockStripRows.isEmpty()) {
+                0.dp
+            } else {
+                lockStripRows.fold(0.dp) { acc, h -> acc + h } + DockMetrics.Gap * (lockStripRows.size - 1) + DockMetrics.BottomMargin
+            }
+            val stripHeight = maxOf(bottom, 56.dp, lockStripNeeded)
             val lockContent = Modifier
                 .fillMaxSize()
                 .padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = stripHeight + 8.dp)
@@ -348,6 +365,9 @@ fun CoverScreen(
 }
 
 private const val PAGE_BAR_TIMEOUT_MS = 4_000L
+
+/** The lock glyph over two lines of hint text, when it sits beside the cameras. */
+private val LockHintHeight = 60.dp
 
 /** The dock never gets narrower than this, whatever the camera width setting says. */
 private val MinDockWidth = 160.dp
