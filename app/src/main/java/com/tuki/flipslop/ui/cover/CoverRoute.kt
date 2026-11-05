@@ -33,6 +33,7 @@ fun rememberCoverUiState(
     locked: Boolean,
     edgePaddingDp: Int,
     showCameraGuide: Boolean = false,
+    hiddenCount: Int = 0,
 ): CoverUiState {
     val context = LocalContext.current
     val settings by runtime.settings.collectAsStateWithLifecycle()
@@ -86,6 +87,7 @@ fun rememberCoverUiState(
         fingerprintUnlock = systemFingerprint ||
             (trust == TrustStatus.READY && settings.lock.fingerprint != FingerprintUnlock.OFF),
         lockPolicy = lockPolicy,
+        hiddenCount = hiddenCount,
         notifications = notifications,
         notificationAccess = connected,
         media = media,

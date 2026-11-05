@@ -40,6 +40,8 @@ data class CoverUiState(
     val fingerprintUnlock: Boolean = false,
     /** The system's lock screen notification switches. */
     val lockPolicy: LockScreenPolicy = LockScreenPolicy(),
+    /** Goes up each time the cover leaves the screen (screen off): one-off slides close on it. */
+    val hiddenCount: Int = 0,
     val notifications: List<CoverNotification> = emptyList(),
     val notificationAccess: Boolean = false,
     val media: MediaState? = null,

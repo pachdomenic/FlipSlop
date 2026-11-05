@@ -64,6 +64,13 @@ class CoverActivity : ComponentActivity() {
     private val runtime by lazy { coverRuntime }
     private var locked by mutableStateOf(false)
     private var edgePadding by mutableIntStateOf(16)
+
+    /**
+     * Bumped in onStop. The activity stops as the screen goes off, before
+     * SCREEN_OFF arrives (its receiver is gone by then), so this is what lets
+     * the notifications slide close with the screen.
+     */
+    private var hiddenCount by mutableIntStateOf(0)
     private var pickingWidget by mutableStateOf(false)
     private lateinit var widgetAdder: WidgetAdder
     private val fingerprint by lazy { FingerprintPrompt(this) }
@@ -89,7 +96,7 @@ class CoverActivity : ComponentActivity() {
 
         setContent {
             FlipSlopTheme(darkTheme = true) {
-                val state = rememberCoverUiState(runtime, locked, edgePadding)
+                val state = rememberCoverUiState(runtime, locked, edgePadding, hiddenCount = hiddenCount)
                 val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                 Box {
                     CoverScreen(
@@ -232,6 +239,7 @@ class CoverActivity : ComponentActivity() {
     override fun onStop() {
         // Stopped when the screen goes off (or something covers us): prompt again next time.
         autoPrompted = false
+        hiddenCount++
         fingerprint.dismiss()
         runCatching { unregisterReceiver(keyguardReceiver) }
         runtime.toggles.stop()

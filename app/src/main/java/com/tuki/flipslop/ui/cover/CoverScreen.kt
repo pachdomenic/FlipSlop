@@ -113,12 +113,14 @@ fun CoverScreen(
     }
 
     // Notification icons on the lock screen: the lock screen's Notifications page when there is
-    // one, otherwise the notifications slide, all without unlocking. Unlocking closes it.
+    // one, otherwise the notifications slide, all without unlocking. Unlocking closes it,
+    // and so does the screen going off: the next wake starts from the clock.
     var notificationsSheet by remember { mutableStateOf(false) }
     BackHandler(enabled = notificationsSheet) { notificationsSheet = false }
     LaunchedEffect(lockView) {
         if (!lockView) notificationsSheet = false
     }
+    LaunchedEffect(state.hiddenCount) { notificationsSheet = false }
 
     val edge = state.edgePaddingDp.dp
     val bottom = state.bottomInsetDp.dp
