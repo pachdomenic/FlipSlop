@@ -504,8 +504,10 @@ private fun permissionRows(caps: CapabilityState, host: SettingsHost): List<@Com
         Perm(Icons.Rounded.QueryStats, R.string.perm_usage, R.string.perm_usage_desc, caps.usageAccess, host::grantUsageAccess),
         Perm(Icons.Rounded.BrightnessMedium, R.string.perm_write_settings, R.string.perm_write_settings_desc, caps.writeSettings, host::grantWriteSettings),
     )
-    return perms.map { p ->
-        { shapes: Shape ->
+    // Explicit type arguments: the platform's kotlinc doesn't infer the
+    // lambda as @Composable from the return type.
+    return perms.map<Perm, @Composable (Shape) -> Unit> { p ->
+        { shapes ->
             SettingsItem(
                 onClick = p.onGrant,
                 shapes = shapes,
