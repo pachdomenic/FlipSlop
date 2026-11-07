@@ -337,10 +337,10 @@ FlipSlop собирается из исходников вместе с прош
 - `etc/sysconfig/sysconfig-com.tuki.flipslop.xml` (`hidden-api-whitelisted-app`, `allow-in-power-save`);
 - `FlipSlopFrameworksOverlay` с `config_defaultListenerAccessPackages`.
 
-Манифест для Soong (`lineage/AndroidManifest.xml`) несёт только имя пакета: его требует aapt2, а AGP
-не разрешает указывать его в исходном манифесте. Всё остальное подмешивается из
-`app/src/main/AndroidManifest.xml`. Версия задаётся в двух местах: `app/build.gradle.kts` и
-`aaptflags` в `Android.bp`.
+Soong собирает приложение с `app/src/main/AndroidManifest.xml`, но aapt2 и manifest-merger требуют
+атрибут `package`, а AGP не разрешает указывать его в исходном манифесте. Поэтому genrule
+`FlipSlop_manifest` в `Android.bp` добавляет `package="com.tuki.flipslop"` в копию манифеста.
+Версия задаётся в двух местах: `app/build.gradle.kts` и `aaptflags` в `Android.bp`.
 
 ## Значения arcfox, взятые за основу
 

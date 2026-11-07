@@ -17,11 +17,10 @@ android_app {
 
     srcs: ["app/src/main/java/**/*.kt"],
     resource_dirs: ["app/src/main/res"],
-    // aapt2 needs the package attribute, which AGP no longer allows in the
-    // source manifest: a minimal manifest carries it and the app's manifest
-    // is merged in.
-    manifest: "lineage/AndroidManifest.xml",
-    additional_manifests: ["app/src/main/AndroidManifest.xml"],
+    // aapt2 and manifest-merger need the package attribute, which AGP no
+    // longer allows in the source manifest: FlipSlop_manifest adds it to a
+    // copy of the app's manifest.
+    manifest: ":FlipSlop_manifest",
     use_resource_processor: true,
 
     // System API: unlock/CoverTrustAgent extends TrustAgentService.
@@ -80,4 +79,13 @@ android_app {
         "privapp-permissions-com.tuki.flipslop.xml",
         "sysconfig-com.tuki.flipslop.xml",
     ],
+}
+
+// app/src/main/AndroidManifest.xml with package="com.tuki.flipslop" (Gradle
+// takes it from namespace in app/build.gradle.kts instead).
+genrule {
+    name: "FlipSlop_manifest",
+    srcs: ["app/src/main/AndroidManifest.xml"],
+    out: ["AndroidManifest.xml"],
+    cmd: "sed 's/<manifest /<manifest package=\"com.tuki.flipslop\" /' $(in) > $(out)",
 }
