@@ -145,13 +145,15 @@ class CoverRuntime(private val app: Application) {
         return caps
     }
 
+    val keepAliveWanted: Boolean
+        get() = settings.value.autoShowOnFold && !notifications.connected.value
+
     /**
      * Keep the process alive for the fold monitor. A bound notification listener
      * already does that; otherwise run a quiet foreground service.
      */
     fun ensureKeepAlive() {
-        val wanted = settings.value.autoShowOnFold
-        if (wanted && !notifications.connected.value) {
+        if (keepAliveWanted) {
             CoverService.start(app)
         } else {
             CoverService.stop(app)

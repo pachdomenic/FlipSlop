@@ -22,6 +22,8 @@ class CoverService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // A sticky restart has a null intent and no start() behind it.
+        if (intent != null && startsInFlight > 0) startsInFlight--
         val settings = PendingIntent.getActivity(
             this,
             0,
@@ -44,6 +46,11 @@ class CoverService : Service() {
             return START_NOT_STICKY
         }
         coverRuntime.start()
+        if (startsInFlight == 0 && !coverRuntime.keepAliveWanted) {
+            // stop() arrived while this start was in flight.
+            stopSelf()
+            return START_NOT_STICKY
+        }
         return START_STICKY
     }
 
@@ -51,9 +58,13 @@ class CoverService : Service() {
         private const val TAG = "FlipSlop.Service"
         private const val NOTIFICATION_ID = 1
 
+        /** startForegroundService calls not yet delivered to onStartCommand. Main thread only. */
+        private var startsInFlight = 0
+
         fun start(context: Context) {
             try {
                 context.startForegroundService(Intent(context, CoverService::class.java))
+                startsInFlight++
             } catch (e: ForegroundServiceStartNotAllowedException) {
                 Log.i(TAG, "not allowed to start the keep-alive service right now", e)
             } catch (e: IllegalStateException) {
@@ -62,6 +73,10 @@ class CoverService : Service() {
         }
 
         fun stop(context: Context) {
+            // Stopping before startForeground kills the whole process, and the listener
+            // that connects right after every process start would make that a crash loop.
+            // onStartCommand stops the service itself once it is in the foreground.
+            if (startsInFlight > 0) return
             context.stopService(Intent(context, CoverService::class.java))
         }
     }
