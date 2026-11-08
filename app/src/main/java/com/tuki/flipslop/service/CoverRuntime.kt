@@ -1,6 +1,7 @@
 package com.tuki.flipslop.service
 
 import android.app.Application
+import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -11,6 +12,9 @@ import com.tuki.flipslop.apps.AppsRepository
 import com.tuki.flipslop.apps.SystemIconTheme
 import com.tuki.flipslop.core.CapabilityState
 import com.tuki.flipslop.core.Capabilities
+import com.tuki.flipslop.core.FoldContinuation
+import com.tuki.flipslop.core.ForegroundApp
+import com.tuki.flipslop.core.HomeApp
 import com.tuki.flipslop.data.CoverPrefs
 import com.tuki.flipslop.data.CoverSettings
 import com.tuki.flipslop.fold.FoldState
@@ -33,6 +37,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Process-wide state. Lives as long as the process, which is kept alive either
@@ -157,13 +162,28 @@ class CoverRuntime(private val app: Application) {
         when (state) {
             FoldState.FOLDED -> {
                 val s = prefs.settings.first()
-                if (s.autoShowOnFold && interactive.value) {
+                if (s.autoShowOnFold && interactive.value && !keepForegroundApp()) {
                     launcher.show(CoverLauncher.Reason.FOLD)
                 }
             }
             FoldState.OPEN, FoldState.HALF_OPEN -> launcher.cancelFallback()
             FoldState.UNKNOWN -> Unit
         }
+    }
+
+    /** System setting "Continue using apps on fold: Always": leave the app in front alone. */
+    private suspend fun keepForegroundApp(): Boolean {
+        if (!FoldContinuation.always(app)) return false
+        val now = System.currentTimeMillis()
+        val foreground = withContext(Dispatchers.Default) {
+            ForegroundApp.lastResumed(app, now - FOREGROUND_LOOKBACK_MS, now)
+        }
+        return FoldContinuation.keepsApp(
+            keyguardLocked = app.getSystemService(KeyguardManager::class.java).isKeyguardLocked,
+            foreground = foreground,
+            home = HomeApp.packageName(app),
+            self = app.packageName,
+        )
     }
 
     private fun registerScreenReceiver() {
@@ -201,5 +221,6 @@ class CoverRuntime(private val app: Application) {
 
     private companion object {
         const val BOOT_SETTLE_MS = 500L
+        const val FOREGROUND_LOOKBACK_MS = 24 * 60 * 60 * 1000L
     }
 }

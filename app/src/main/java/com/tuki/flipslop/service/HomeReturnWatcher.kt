@@ -1,8 +1,7 @@
 package com.tuki.flipslop.service
 
-import android.app.usage.UsageEvents
-import android.app.usage.UsageStatsManager
 import android.content.Context
+import com.tuki.flipslop.core.ForegroundApp
 import com.tuki.flipslop.core.HomeApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,23 +32,13 @@ class HomeReturnWatcher(
     }
 
     private suspend fun watch() {
-        val usm = context.getSystemService(UsageStatsManager::class.java) ?: return
         var since = System.currentTimeMillis()
         while (kotlin.coroutines.coroutineContext.isActive) {
             delay(POLL_MS)
             val now = System.currentTimeMillis()
             val home = HomeApp.packageName(context) ?: continue
             val homeOnTop = withContext(Dispatchers.Default) {
-                val events = runCatching { usm.queryEvents(since, now) }.getOrNull()
-                var top = false
-                val e = UsageEvents.Event()
-                while (events != null && events.hasNextEvent()) {
-                    events.getNextEvent(e)
-                    if (e.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
-                        top = e.packageName == home
-                    }
-                }
-                top
+                ForegroundApp.lastResumed(context, since, now) == home
             }
             since = now
             if (homeOnTop) runtime.launcher.show(CoverLauncher.Reason.HOME)
