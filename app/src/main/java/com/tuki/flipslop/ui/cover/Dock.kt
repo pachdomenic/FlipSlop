@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -51,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tuki.flipslop.R
 import com.tuki.flipslop.data.CoverPage
+import com.tuki.flipslop.notifications.CoverNotification
 import com.tuki.flipslop.ui.components.IconImage
 
 /** Fixed row heights, so the pager knows how much room the dock takes. */
@@ -149,42 +152,78 @@ fun PageDots(pages: Int, current: Int, onClick: () -> Unit, modifier: Modifier =
     }
 }
 
-/** App icons of pending notifications, like the stock cover's notification row. */
+/**
+ * App icons of pending notifications, like the stock cover's notification row.
+ * [vertical]: a column of icons, for the dock column beside the cameras in
+ * landscape. As many icons as fit (width, or height when vertical), the rest as "+N".
+ */
 @Composable
-fun DockNotifications(state: CoverUiState, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun DockNotifications(
+    state: CoverUiState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    vertical: Boolean = false,
+) = BoxWithConstraints {
     val apps = state.notifications.distinctBy { it.packageName }
-    val shown = apps.take(MAX_ICONS)
+    val room = if (vertical) maxHeight else maxWidth
+    val fit = if (room == Dp.Infinity) {
+        MAX_ICONS
+    } else {
+        (minOf(MAX_ICONS, apps.size) downTo 1).firstOrNull { n ->
+            val more = if (apps.size > n) (if (vertical) MoreLabelHeight else MoreLabelWidth) else 0.dp
+            12.dp + 26.dp * n + 4.dp * (n - 1) + more <= room
+        } ?: 1
+    }
+    val shown = apps.take(fit)
+    val more = apps.size - shown.size
     Surface(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
-        modifier = modifier.height(DockMetrics.NotificationsHeight).clickable(onClick = onClick),
+        modifier = modifier
+            .then(if (vertical) Modifier.width(DockMetrics.NotificationsHeight) else Modifier.height(DockMetrics.NotificationsHeight))
+            .clickable(onClick = onClick),
     ) {
-        Row(
-            Modifier.padding(horizontal = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            shown.forEach { n ->
-                Box(
-                    Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    IconImage(
-                        n.smallIcon,
-                        size = 15.dp,
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer),
-                        fallback = n.appIcon,
-                    )
+        if (vertical) {
+            Column(
+                Modifier.padding(vertical = 6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                shown.forEach { NotificationIcon(it) }
+                if (more > 0) {
+                    Text("+$more", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 2.dp))
                 }
             }
-            val more = apps.size - shown.size
-            if (more > 0) {
-                Text("+$more", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(end = 4.dp))
+        } else {
+            Row(
+                Modifier.padding(horizontal = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                shown.forEach { NotificationIcon(it) }
+                if (more > 0) {
+                    Text("+$more", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(end = 4.dp))
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun NotificationIcon(n: CoverNotification) {
+    Box(
+        Modifier
+            .size(26.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center,
+    ) {
+        IconImage(
+            n.smallIcon,
+            size = 15.dp,
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer),
+            fallback = n.appIcon,
+        )
     }
 }
 
@@ -286,4 +325,8 @@ fun CameraGuide(width: Dp, height: Dp, outerSideIsEnd: Boolean, modifier: Modifi
 }
 
 private const val MAX_ICONS = 6
+
+/** Room for the "+N" after the icons, with its gap (below them when vertical). */
+private val MoreLabelWidth = 32.dp
+private val MoreLabelHeight = 22.dp
 
