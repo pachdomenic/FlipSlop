@@ -163,8 +163,11 @@ class CoverRuntime(private val app: Application) {
     private suspend fun onFoldStateChanged(state: FoldState) {
         when (state) {
             FoldState.FOLDED -> {
+                // Read before anything suspends: with "swipe up" the system raises its
+                // own keyguard right after the fold, and that must not count as locked.
+                val keyguardLocked = app.getSystemService(KeyguardManager::class.java).isKeyguardLocked
                 val s = prefs.settings.first()
-                if (s.autoShowOnFold && interactive.value && !keepForegroundApp()) {
+                if (s.autoShowOnFold && interactive.value && showsCoverOnFold(keyguardLocked)) {
                     launcher.show(CoverLauncher.Reason.FOLD)
                 }
             }
@@ -173,15 +176,15 @@ class CoverRuntime(private val app: Application) {
         }
     }
 
-    /** System setting "Continue using apps on fold: Always": leave the app in front alone. */
-    private suspend fun keepForegroundApp(): Boolean {
-        if (!FoldContinuation.always(app)) return false
+    /** Follows the system's "Continue using apps on fold" option. */
+    private suspend fun showsCoverOnFold(keyguardLocked: Boolean): Boolean {
         val now = System.currentTimeMillis()
         val foreground = withContext(Dispatchers.Default) {
             ForegroundApp.lastResumed(app, now - FOREGROUND_LOOKBACK_MS, now)
         }
-        return FoldContinuation.keepsApp(
-            keyguardLocked = app.getSystemService(KeyguardManager::class.java).isKeyguardLocked,
+        return FoldContinuation.showsCover(
+            behavior = FoldContinuation.behavior(app),
+            keyguardLocked = keyguardLocked,
             foreground = foreground,
             home = HomeApp.packageName(app),
             self = app.packageName,

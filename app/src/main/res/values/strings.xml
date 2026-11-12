@@ -116,7 +116,7 @@
 
     <string name="section_behaviour">Behaviour</string>
     <string name="pref_auto_show">Show when folded</string>
-    <string name="pref_auto_show_desc">Open the cover launcher every time you close the phone</string>
+    <string name="pref_auto_show_desc">Open the cover launcher when you close the phone, following the system\'s \"Continue using apps on fold\" option</string>
     <string name="pref_show_on_wake">Show when the cover wakes</string>
     <string name="pref_show_on_wake_desc">Pressing power while folded opens the cover launcher</string>
     <string name="lock_hint">Tap or swipe up to unlock</string>

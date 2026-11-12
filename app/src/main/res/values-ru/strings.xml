@@ -116,7 +116,7 @@
 
     <string name="section_behaviour">Поведение</string>
     <string name="pref_auto_show">Показывать при закрытии</string>
-    <string name="pref_auto_show_desc">Открывать лаунчер обложки каждый раз, когда телефон закрыт</string>
+    <string name="pref_auto_show_desc">Открывать лаунчер обложки при закрытии телефона, с учётом системной настройки «Продолжать использовать приложения при складывании»</string>
     <string name="pref_show_on_wake">Показывать при включении экрана</string>
     <string name="pref_show_on_wake_desc">Кнопка питания на закрытом телефоне открывает лаунчер обложки</string>
     <string name="lock_hint">Нажмите или проведите вверх, чтобы разблокировать</string>
