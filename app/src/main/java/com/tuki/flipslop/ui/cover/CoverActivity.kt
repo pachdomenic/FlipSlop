@@ -5,9 +5,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
+import android.hardware.display.DisplayManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.view.RoundedCorner
+import android.view.Surface
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -67,6 +72,14 @@ class CoverActivity : ComponentActivity() {
     private var edgePadding by mutableIntStateOf(16)
 
     /**
+     * The display's rotation (Surface.ROTATION_*). The camera block turns with
+     * the device and the layout follows it (see CoverScreen). A half turn
+     * changes neither size nor orientation, so no configuration change tells
+     * us about it; [displayListener] does.
+     */
+    private var rotation by mutableIntStateOf(Surface.ROTATION_0)
+
+    /**
      * Bumped in onStop. The activity stops as the screen goes off, before
      * SCREEN_OFF arrives (its receiver is gone by then), so this is what lets
      * the notifications slide close with the screen.
@@ -104,6 +117,7 @@ class CoverActivity : ComponentActivity() {
                         state = state,
                         actions = actions,
                         topInset = statusBar,
+                        rotation = rotation,
                         widget = { id, modifier -> HostedWidget(runtime, id, modifier) },
                     )
                     BackHandler(enabled = pickingWidget) { pickingWidget = false }
@@ -113,10 +127,19 @@ class CoverActivity : ComponentActivity() {
                         exit = fadeOut() + slideOutVertically { it / 3 },
                     ) {
                         val providers = remember { runtime.widgets.providers() }
+                        val camera = state.cameraPlacement(rotation)
+                        val bottom = state.bottomInsetDp.dp
+                        val side = sideStripWidth(bottom)
                         CoverWidgetPicker(
                             providers = providers,
-                            topInset = maxOf(edgePadding.dp, statusBar),
-                            bottomInset = state.bottomInsetDp.dp,
+                            topInset = if (camera.edge == CameraEdge.TOP) {
+                                maxOf(edgePadding.dp, statusBar, bottom)
+                            } else {
+                                maxOf(edgePadding.dp, statusBar)
+                            },
+                            bottomInset = if (camera.edge == CameraEdge.BOTTOM) bottom else 0.dp,
+                            startInset = if (camera.edge == CameraEdge.LEFT) side else 0.dp,
+                            endInset = if (camera.edge == CameraEdge.RIGHT) side else 0.dp,
                             onPick = { info ->
                                 pickingWidget = false
                                 unlocked { widgetAdder.add(info) }
@@ -166,11 +189,31 @@ class CoverActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         stay = intent.getBooleanExtra(EXTRA_STAY, false)
+        refreshRotation()
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         edgePadding = cornerPaddingDp()
+        refreshRotation()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        refreshRotation()
+    }
+
+    private val displayListener = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) {}
+        override fun onDisplayRemoved(displayId: Int) {}
+        override fun onDisplayChanged(displayId: Int) {
+            if (displayId == display.displayId) refreshRotation()
+        }
+    }
+
+    /** The settings preview on the inner screen keeps the cover's natural layout. */
+    private fun refreshRotation() {
+        rotation = if (stay) Surface.ROTATION_0 else display.rotation
     }
 
     /** The keyguard comes and goes while we stay on screen; keep [locked] in step. */
@@ -217,6 +260,9 @@ class CoverActivity : ComponentActivity() {
             RECEIVER_EXPORTED,
         )
         refreshLocked()
+        getSystemService(DisplayManager::class.java)
+            .registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
+        refreshRotation()
         runtime.widgets.startListening()
         runtime.toggles.start()
     }
@@ -243,6 +289,7 @@ class CoverActivity : ComponentActivity() {
         hiddenCount++
         fingerprint.dismiss()
         runCatching { unregisterReceiver(keyguardReceiver) }
+        getSystemService(DisplayManager::class.java).unregisterDisplayListener(displayListener)
         runtime.toggles.stop()
         runtime.widgets.stopListening()
         super.onStop()

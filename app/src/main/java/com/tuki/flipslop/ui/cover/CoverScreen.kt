@@ -16,10 +16,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -52,7 +54,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tuki.flipslop.R
-import com.tuki.flipslop.core.CameraSide
 import com.tuki.flipslop.data.CoverPage
 import com.tuki.flipslop.data.HomeStyle
 import com.tuki.flipslop.data.LockHintPosition
@@ -75,6 +76,13 @@ fun CoverScreen(
     initialPage: CoverPage = CoverPage.HOME,
     /** Height of a visible status bar; content starts below it. */
     topInset: Dp = 0.dp,
+    /**
+     * The display's rotation (a Surface.ROTATION_*). The camera block turns with
+     * the device, so the strip beside it (dock, lock hint, close buttons) follows
+     * it: to the top when upside down, to a column on the left or right edge in
+     * landscape, and the pages make room for it there instead.
+     */
+    rotation: Int = 0,
     widget: @Composable (id: Int, modifier: Modifier) -> Unit = { _, _ -> },
 ) {
     val pages = state.pages.ifEmpty { listOf(CoverPage.HOME) }
@@ -127,6 +135,11 @@ fun CoverScreen(
     val dock = state.dock
     val dockMedia = dock.media && state.media != null
     val dockNotifications = dock.notifications && state.notifications.isNotEmpty()
+    val placement = state.cameraPlacement(rotation)
+    val cameraOnTop = placement.edge == CameraEdge.TOP
+    val sideways = placement.sideways
+    // Upside down, the strip's outer margin also clears a visible status bar.
+    val stripMargin = if (cameraOnTop) maxOf(DockMetrics.BottomMargin, topInset) else DockMetrics.BottomMargin
 
     val goTo: (CoverPage) -> Boolean = { page ->
         val i = pages.indexOf(page)
@@ -145,7 +158,7 @@ fun CoverScreen(
     val dockHeight = if (dockRows.isEmpty()) {
         0.dp
     } else {
-        dockRows.fold(0.dp) { acc, h -> acc + h } + DockMetrics.Gap * (dockRows.size - 1) + DockMetrics.BottomMargin
+        dockRows.fold(0.dp) { acc, h -> acc + h } + DockMetrics.Gap * (dockRows.size - 1) + stripMargin
     }
     val reserved = maxOf(bottom, dockHeight)
     val contentBottom = if (dock.pageBarAlways) reserved + DockMetrics.FloatingToolbarHeight + 20.dp else reserved + 8.dp
@@ -200,10 +213,47 @@ fun CoverScreen(
             )
 
             val cameraWidth = dock.cameraWidthDp.dp.coerceIn(0.dp, maxOf(0.dp, maxWidth - MinDockWidth))
-            val cameraLeft = dock.cameraSide == CameraSide.LEFT
+            // A half turn moves the cameras to the other side as well as to the top.
+            val cameraLeft = !placement.atEnd
 
-            // The lock screen and the music slide: one page above the strip beside the cameras.
-            val stripAlign = if (cameraLeft) Alignment.BottomEnd else Alignment.BottomStart
+            // Landscape: the strip is a column along the camera edge, the cameras at one
+            // end of it and the dock (or the lock strip) in the rest; the pages take what is left.
+            val sideWidth = sideStripWidth(bottom)
+            val cameraLength = dock.cameraWidthDp.dp.coerceIn(0.dp, maxOf(0.dp, maxHeight - MinSideDockHeight))
+            val cameraAtTop = !placement.atEnd
+            val sideStart = if (placement.edge == CameraEdge.LEFT) sideWidth + 8.dp else edge
+            val sideEnd = if (placement.edge == CameraEdge.RIGHT) sideWidth + 8.dp else edge
+            val sideStrip = Modifier
+                .align(if (placement.edge == CameraEdge.LEFT) Alignment.CenterStart else Alignment.CenterEnd)
+                .fillMaxHeight()
+                .width(sideWidth)
+                .padding(
+                    start = if (placement.edge == CameraEdge.LEFT) DockMetrics.BottomMargin else 0.dp,
+                    end = if (placement.edge == CameraEdge.RIGHT) DockMetrics.BottomMargin else 0.dp,
+                    top = if (cameraAtTop) cameraLength else maxOf(edge, topInset),
+                    bottom = if (cameraAtTop) edge else cameraLength,
+                )
+
+            // The lock screen and the music slide: one page beside (above, or below when
+            // upside down) the strip beside the cameras.
+            val stripAlign = when {
+                cameraOnTop && cameraLeft -> Alignment.TopEnd
+                cameraOnTop -> Alignment.TopStart
+                cameraLeft -> Alignment.BottomEnd
+                else -> Alignment.BottomStart
+            }
+            val cameraAlign = when {
+                cameraOnTop && cameraLeft -> Alignment.TopStart
+                cameraOnTop -> Alignment.TopEnd
+                cameraLeft -> Alignment.BottomStart
+                else -> Alignment.BottomEnd
+            }
+            val stripPadding = Modifier.padding(
+                start = if (cameraLeft) cameraWidth else edge,
+                end = if (cameraLeft) edge else cameraWidth,
+                top = if (cameraOnTop) stripMargin else 0.dp,
+                bottom = if (cameraOnTop) 0.dp else stripMargin,
+            )
             // Locked, the strip may hold the hint, the chips and the page dots: make room for them.
             val lockStripRows = if (!lockView) {
                 emptyList()
@@ -218,12 +268,29 @@ fun CoverScreen(
             val lockStripNeeded = if (lockStripRows.isEmpty()) {
                 0.dp
             } else {
-                lockStripRows.fold(0.dp) { acc, h -> acc + h } + DockMetrics.Gap * (lockStripRows.size - 1) + DockMetrics.BottomMargin
+                lockStripRows.fold(0.dp) { acc, h -> acc + h } + DockMetrics.Gap * (lockStripRows.size - 1) + stripMargin
             }
             val stripHeight = maxOf(bottom, 56.dp, lockStripNeeded)
             val lockContent = Modifier
                 .fillMaxSize()
-                .padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = stripHeight + 8.dp)
+                .then(
+                    if (sideways) {
+                        Modifier.padding(start = sideStart, end = sideEnd, top = maxOf(edge, topInset + 8.dp), bottom = edge)
+                    } else if (cameraOnTop) {
+                        Modifier.padding(start = edge, end = edge, top = stripHeight + 8.dp, bottom = edge)
+                    } else {
+                        Modifier.padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = stripHeight + 8.dp)
+                    },
+                )
+            val lockStrip = if (sideways) {
+                sideStrip
+            } else {
+                Modifier
+                    .align(stripAlign)
+                    .fillMaxWidth()
+                    .height(stripHeight)
+                    .then(stripPadding)
+            }
 
             if (lockView) {
                 LockScreen(
@@ -234,15 +301,8 @@ fun CoverScreen(
                     onOpenMedia = openMedia,
                     onOpenNotifications = { notificationsSheet = true },
                     contentModifier = lockContent,
-                    stripModifier = Modifier
-                        .align(stripAlign)
-                        .fillMaxWidth()
-                        .height(stripHeight)
-                        .padding(
-                            start = if (cameraLeft) cameraWidth else edge,
-                            end = if (cameraLeft) edge else cameraWidth,
-                            bottom = DockMetrics.BottomMargin,
-                        ),
+                    stripModifier = lockStrip,
+                    stripVertical = sideways,
                 )
             } else {
                 HorizontalPager(
@@ -253,7 +313,20 @@ fun CoverScreen(
                 ) { index ->
                     val pageModifier = Modifier
                         .fillMaxSize()
-                        .padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = contentBottom)
+                        .then(
+                            if (sideways) {
+                                Modifier.padding(
+                                    start = sideStart,
+                                    end = sideEnd,
+                                    top = maxOf(edge, topInset + 8.dp),
+                                    bottom = if (dock.pageBarAlways) edge + DockMetrics.FloatingToolbarHeight + 12.dp else edge,
+                                )
+                            } else if (cameraOnTop) {
+                                Modifier.padding(start = edge, end = edge, top = maxOf(contentBottom, edge, topInset + 8.dp), bottom = edge)
+                            } else {
+                                Modifier.padding(start = edge, end = edge, top = maxOf(edge, topInset + 8.dp), bottom = contentBottom)
+                            },
+                        )
                     when (pages[index]) {
                         CoverPage.HOME -> HomePage(
                             state = state,
@@ -275,15 +348,15 @@ fun CoverScreen(
                 // The strip beside the camera block; the dock sits centred in it.
                 if (dockRows.isNotEmpty()) {
                     Box(
-                        Modifier
-                            .align(if (cameraLeft) Alignment.BottomEnd else Alignment.BottomStart)
-                            .fillMaxWidth()
-                            .height(reserved)
-                            .padding(
-                                start = if (cameraLeft) cameraWidth else edge,
-                                end = if (cameraLeft) edge else cameraWidth,
-                                bottom = DockMetrics.BottomMargin,
-                            ),
+                        if (sideways) {
+                            sideStrip
+                        } else {
+                            Modifier
+                                .align(stripAlign)
+                                .fillMaxWidth()
+                                .height(reserved)
+                                .then(stripPadding)
+                        },
                         contentAlignment = Alignment.Center,
                     ) {
                         Column(
@@ -308,10 +381,12 @@ fun CoverScreen(
                             }
                             AnimatedVisibility(
                                 visible = dockNotifications && target != CoverPage.NOTIFICATIONS && !(target == CoverPage.HOME && cardsHome),
+                                // Measured last in the column: the icons get what the other pills leave.
+                                modifier = if (sideways) Modifier.weight(1f, fill = false) else Modifier,
                                 enter = fadeIn() + expandVertically(),
                                 exit = fadeOut() + shrinkVertically(),
                             ) {
-                                DockNotifications(state, onClick = { goTo(CoverPage.NOTIFICATIONS) })
+                                DockNotifications(state, onClick = { goTo(CoverPage.NOTIFICATIONS) }, vertical = sideways)
                             }
                             if (showDots) {
                                 PageDots(
@@ -326,11 +401,19 @@ fun CoverScreen(
 
                 AnimatedVisibility(
                     visible = barVisible,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = reserved + 12.dp),
-                    enter = fadeIn() + scaleIn(initialScale = 0.85f) + slideInVertically { it / 2 },
-                    exit = fadeOut() + scaleOut(targetScale = 0.85f) + slideOutVertically { it / 2 },
+                    modifier = if (sideways) {
+                        // Centred under the pages, clear of the camera column.
+                        Modifier.align(Alignment.BottomCenter).padding(start = sideStart, end = sideEnd, bottom = edge)
+                    } else if (cameraOnTop) {
+                        Modifier.align(Alignment.TopCenter).padding(top = reserved + 12.dp)
+                    } else {
+                        Modifier.align(Alignment.BottomCenter).padding(bottom = reserved + 12.dp)
+                    },
+                    // Slides in from the strip's side.
+                    enter = fadeIn() + scaleIn(initialScale = 0.85f) +
+                        slideInVertically { if (cameraOnTop) -it / 2 else it / 2 },
+                    exit = fadeOut() + scaleOut(targetScale = 0.85f) +
+                        slideOutVertically { if (cameraOnTop) -it / 2 else it / 2 },
                 ) {
                     PageBar(
                         pages = pages,
@@ -351,15 +434,7 @@ fun CoverScreen(
                     actions = actions,
                     onClose = { notificationsSheet = false },
                     contentModifier = lockContent,
-                    stripModifier = Modifier
-                        .align(stripAlign)
-                        .fillMaxWidth()
-                        .height(stripHeight)
-                        .padding(
-                            start = if (cameraLeft) cameraWidth else edge,
-                            end = if (cameraLeft) edge else cameraWidth,
-                            bottom = DockMetrics.BottomMargin,
-                        ),
+                    stripModifier = lockStrip,
                 )
             }
 
@@ -373,24 +448,16 @@ fun CoverScreen(
                     actions = actions,
                     onClose = { mediaSheet = false },
                     contentModifier = lockContent,
-                    stripModifier = Modifier
-                        .align(stripAlign)
-                        .fillMaxWidth()
-                        .height(stripHeight)
-                        .padding(
-                            start = if (cameraLeft) cameraWidth else edge,
-                            end = if (cameraLeft) edge else cameraWidth,
-                            bottom = DockMetrics.BottomMargin,
-                        ),
+                    stripModifier = lockStrip,
                 )
             }
 
-            if (state.showCameraGuide && cameraWidth > 0.dp && bottom > 0.dp) {
+            if (state.showCameraGuide && !sideways && cameraWidth > 0.dp && bottom > 0.dp) {
                 CameraGuide(
                     width = cameraWidth,
                     height = bottom,
                     outerSideIsEnd = !cameraLeft,
-                    modifier = Modifier.align(if (cameraLeft) Alignment.BottomStart else Alignment.BottomEnd),
+                    modifier = Modifier.align(cameraAlign),
                 )
             }
         }
@@ -404,6 +471,14 @@ private val LockHintHeight = 60.dp
 
 /** The dock never gets narrower than this, whatever the camera width setting says. */
 private val MinDockWidth = 160.dp
+
+/** In landscape, the dock column keeps at least this much height beside the cameras. */
+private val MinSideDockHeight = 180.dp
+
+/** In landscape, the column along the camera edge: the bottom inset, but wide enough for the dock. */
+private val SideStripMinWidth = 152.dp
+
+fun sideStripWidth(bottomInset: Dp): Dp = maxOf(bottomInset, SideStripMinWidth)
 
 val CoverPage.icon: ImageVector
     get() = when (this) {

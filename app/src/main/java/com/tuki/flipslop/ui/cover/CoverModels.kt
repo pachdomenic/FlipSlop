@@ -1,5 +1,6 @@
 package com.tuki.flipslop.ui.cover
 
+import android.view.Surface
 import com.tuki.flipslop.apps.AppEntry
 import com.tuki.flipslop.apps.AppMenu
 import com.tuki.flipslop.apps.AppShortcut
@@ -18,6 +19,36 @@ import com.tuki.flipslop.notifications.LockScreenPolicy
 import com.tuki.flipslop.toggles.ToggleStates
 
 data class BatteryInfo(val level: Int, val charging: Boolean)
+
+/** The screen edge the camera block ends up on once the display is rotated. */
+enum class CameraEdge { BOTTOM, TOP, LEFT, RIGHT }
+
+/**
+ * Where the camera block sits on screen. [atEnd]: at the right end of the
+ * bottom or top edge, or at the bottom end of the left or right edge.
+ */
+data class CameraPlacement(val edge: CameraEdge, val atEnd: Boolean) {
+    /** The block is on the left or right edge: the strip beside it is a column. */
+    val sideways: Boolean get() = edge == CameraEdge.LEFT || edge == CameraEdge.RIGHT
+
+    companion object {
+        /**
+         * The block sits on the panel's bottom edge, on [side]. Surface rotations
+         * turn the drawing the opposite way to the device: ROTATION_90 is the
+         * device turned a quarter counter-clockwise, which brings the panel's
+         * bottom edge to the right of the screen and its right end to the top.
+         */
+        fun of(rotation: Int, side: CameraSide): CameraPlacement {
+            val right = side == CameraSide.RIGHT
+            return when (rotation) {
+                Surface.ROTATION_90 -> CameraPlacement(CameraEdge.RIGHT, atEnd = !right)
+                Surface.ROTATION_180 -> CameraPlacement(CameraEdge.TOP, atEnd = !right)
+                Surface.ROTATION_270 -> CameraPlacement(CameraEdge.LEFT, atEnd = right)
+                else -> CameraPlacement(CameraEdge.BOTTOM, atEnd = right)
+            }
+        }
+    }
+}
 
 /** The strip beside the camera block and what goes into it. */
 data class DockConfig(
@@ -72,6 +103,13 @@ data class CoverUiState(
 ) {
     /** Nothing to tell the user: no notifications, nothing playing. */
     val isIdle: Boolean get() = notifications.isEmpty() && media == null
+
+    /**
+     * The camera block on screen for a display rotation (a Surface.ROTATION_*).
+     * With no bottom inset there is no block to keep clear of: natural layout.
+     */
+    fun cameraPlacement(rotation: Int): CameraPlacement =
+        CameraPlacement.of(if (bottomInsetDp > 0) rotation else Surface.ROTATION_0, dock.cameraSide)
 }
 
 /** Everything the cover UI can ask for. Defaults do nothing (previews, tests). */

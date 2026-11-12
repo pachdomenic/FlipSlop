@@ -77,6 +77,8 @@ fun LockScreen(
     modifier: Modifier = Modifier,
     contentModifier: Modifier,
     stripModifier: Modifier,
+    /** The strip is a column beside the cameras (landscape): notification icons stack up. */
+    stripVertical: Boolean = false,
     /** The music chip and the player card open the music slide. */
     onOpenMedia: () -> Unit = actions::mediaOpen,
     /** Notification icons open the notifications slide when there is no Notifications page. */
@@ -135,12 +137,15 @@ fun LockScreen(
                 }
                 AnimatedVisibility(
                     visible = lock.notificationsInStrip(lines.isNotEmpty()) && target != CoverPage.NOTIFICATIONS,
+                    // Measured last in the column: the icons get what the hint, music and dots leave.
+                    modifier = if (stripVertical) Modifier.weight(1f, fill = false) else Modifier,
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically(),
                 ) {
                     DockNotifications(
                         state.copy(notifications = lines.map { it.item }),
                         onClick = { if (!goTo(CoverPage.NOTIFICATIONS)) onOpenNotifications() },
+                        vertical = stripVertical,
                     )
                 }
                 if (pages.size > 1) {

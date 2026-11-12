@@ -31,12 +31,15 @@ fun CoverWidgetPicker(
     providers: List<AppWidgetProviderInfo>,
     topInset: Dp,
     bottomInset: Dp,
+    /** Landscape: the camera column on either side. */
+    startInset: Dp = 0.dp,
+    endInset: Dp = 0.dp,
     onPick: (AppWidgetProviderInfo) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainer) {
-        Column(Modifier.padding(top = topInset + 12.dp, start = 16.dp, end = 16.dp)) {
+        Column(Modifier.padding(top = topInset + 12.dp, start = 16.dp + startInset, end = 16.dp + endInset)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     stringResource(R.string.widgets_pick),
